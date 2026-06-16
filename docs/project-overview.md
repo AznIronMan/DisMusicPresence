@@ -33,7 +33,7 @@ Discord presence is updated only when the formatted text changes. When no enable
 
 The Discord integration requires a Discord application client ID. The app does not bundle or create that application for users.
 
-Optional artwork support can attach a large image asset to Discord Rich Presence. Artwork can come from a public URL or, when explicitly configured, a local custom image uploaded to Filebin for temporary public hosting.
+Optional artwork support can attach a large image asset to Discord Rich Presence. Artwork can come from Apple/iTunes catalog lookup for Apple Music tracks, a public URL, or a local custom image uploaded to Filebin for temporary public hosting.
 
 ## Platform Status
 

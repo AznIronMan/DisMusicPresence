@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 import sys
 import unittest
@@ -19,6 +20,20 @@ class AppleMusicProviderTests(unittest.TestCase):
             activity = provider.poll()
 
         self.assertEqual(activity.kind, ActivityKind.UNAVAILABLE)
+
+    def test_uses_configured_timeout(self) -> None:
+        values = dict(DEFAULT_SETTINGS)
+        values["apple_music.timeout_seconds"] = "12"
+        settings = Settings(path=Path("dmp.settings"), values=values)
+        provider = AppleMusicProvider(settings)
+
+        with patch("platform.system", return_value="Darwin"), patch(
+            "subprocess.run",
+            return_value=SimpleNamespace(returncode=0, stdout="not_running\n", stderr=""),
+        ) as run:
+            provider.poll()
+
+        self.assertEqual(run.call_args.kwargs["timeout"], 12)
 
 
 if __name__ == "__main__":

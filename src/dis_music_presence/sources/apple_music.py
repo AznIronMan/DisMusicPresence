@@ -66,7 +66,7 @@ class AppleMusicProvider(SourceProvider):
                 check=False,
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=self.settings.int("apple_music.timeout_seconds", 10),
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return MediaActivity.error(self.name, f"Apple Music check failed: {exc}")

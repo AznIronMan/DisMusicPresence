@@ -50,7 +50,7 @@ Discord may still show the registered application name as the Rich Presence app 
 
 ## Artwork
 
-Filebin is the default artwork provider, but it does not upload anything until a local image path is configured.
+Filebin is the default artwork provider, but it does not upload anything until a local image path is configured. If no Filebin path is configured, Apple Music tracks use Apple/iTunes catalog artwork when a match is found.
 
 Use a public custom artwork URL:
 
@@ -67,6 +67,12 @@ dmp config set artwork.filebin.path .private/artwork.png
 ```
 
 Filebin uploads are temporary public files. DisMusicPresence keeps the uploaded image alive while the presence is active and deletes it on shutdown by default. If deletion fails, Filebin also expires uploads automatically.
+
+Use only Apple/iTunes catalog artwork:
+
+```sh
+dmp config set artwork.provider apple_catalog
+```
 
 ## Publish A Test Presence
 

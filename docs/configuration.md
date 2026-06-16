@@ -78,9 +78,12 @@ episode_title
 
 ```text
 apple_music.enabled
+apple_music.timeout_seconds
 ```
 
 Apple Music is supported on macOS only. The first time the app checks Apple Music, macOS may ask for automation permission.
+
+`apple_music.timeout_seconds` defaults to `10` so macOS automation has enough time to return current track metadata.
 
 ## Artwork Settings
 
@@ -92,6 +95,9 @@ artwork.filebin.path
 artwork.filebin.base_url
 artwork.filebin.bin
 artwork.filebin.delete_on_shutdown
+artwork.apple_catalog.enabled
+artwork.apple_catalog.country
+artwork.apple_catalog.size
 ```
 
 `artwork.provider` supports:
@@ -99,10 +105,11 @@ artwork.filebin.delete_on_shutdown
 ```text
 none
 custom_url
+apple_catalog
 filebin
 ```
 
-The default provider is `filebin`, but no upload happens unless `artwork.filebin.path` points to a local image file.
+The default provider is `filebin`. No Filebin upload happens unless `artwork.filebin.path` points to a local image file. When Filebin has no local image path configured, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
 
 Use `custom_url` when you already have a public image URL:
 
@@ -124,6 +131,20 @@ By default, Filebin uploads use `https://filebin.net`, a generated bin name, and
 Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMusicPresence rejects Filebin uploads larger than 10 MB.
 
 Filebin artwork is public while active. Do not upload private, sensitive, or copyrighted images unless you are comfortable with that exposure.
+
+Use `apple_catalog` when you want only Apple/iTunes catalog artwork and no Filebin fallback:
+
+```sh
+dmp config set artwork.provider apple_catalog
+```
+
+Apple catalog settings:
+
+```sh
+dmp config set artwork.apple_catalog.enabled true
+dmp config set artwork.apple_catalog.country US
+dmp config set artwork.apple_catalog.size 600
+```
 
 ## Plex Settings
 

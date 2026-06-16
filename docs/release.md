@@ -17,6 +17,12 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.3.0 - 2026-06-16
+
+- Added Apple/iTunes catalog artwork lookup for Apple Music.
+- Added Apple catalog fallback when Filebin has no local image path.
+- Added Apple catalog settings for enablement, country, and artwork size.
+
 ## 0.2.1 - 2026-06-16
 
 - Changed the default artwork provider to Filebin.

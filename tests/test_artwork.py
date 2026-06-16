@@ -5,7 +5,8 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from dis_music_presence.artwork import ArtworkManager, UploadedArtwork
+from dis_music_presence.artwork import ArtworkAsset, ArtworkManager, UploadedArtwork
+from dis_music_presence.artwork import _best_catalog_result, _resize_apple_artwork_url
 from dis_music_presence.models import ActivityKind, MediaActivity, MediaType
 from dis_music_presence.settings import DEFAULT_SETTINGS, Settings
 
@@ -47,15 +48,78 @@ class FakeFilebinClient:
         self.deletes.append(upload)
 
 
+class FakeAppleCatalogClient:
+    def __init__(self, result: ArtworkAsset | None = None) -> None:
+        self.result = result
+        self.lookups: list[dict[str, object]] = []
+
+    def lookup(self, **kwargs: object) -> ArtworkAsset | None:
+        self.lookups.append(kwargs)
+        return self.result
+
+
 class ArtworkManagerTests(unittest.TestCase):
     def test_filebin_default_does_nothing_without_path(self) -> None:
         fake = FakeFilebinClient()
-        manager = ArtworkManager(_settings(), filebin_client=fake)
+        catalog = FakeAppleCatalogClient()
+        manager = ArtworkManager(_settings(), filebin_client=fake, apple_catalog_client=catalog)
 
         artwork = manager.resolve(_activity())
 
         self.assertIsNone(artwork)
         self.assertEqual(fake.uploads, [])
+        self.assertEqual(len(catalog.lookups), 1)
+
+    def test_filebin_default_falls_back_to_apple_catalog(self) -> None:
+        fake = FakeFilebinClient()
+        catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
+        manager = ArtworkManager(_settings(), filebin_client=fake, apple_catalog_client=catalog)
+
+        artwork = manager.resolve(_activity())
+
+        self.assertEqual(artwork.image_url, "https://is1-ssl.mzstatic.com/image.jpg")
+        self.assertEqual(fake.uploads, [])
+        self.assertEqual(catalog.lookups[0]["title"], "Song")
+
+    def test_apple_catalog_can_be_used_explicitly(self) -> None:
+        catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
+        manager = ArtworkManager(
+            _settings(**{"artwork.provider": "apple_catalog"}),
+            apple_catalog_client=catalog,
+        )
+
+        artwork = manager.resolve(_activity())
+
+        self.assertEqual(artwork.image_url, "https://is1-ssl.mzstatic.com/image.jpg")
+
+    def test_apple_catalog_can_be_disabled(self) -> None:
+        catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
+        manager = ArtworkManager(
+            _settings(**{"artwork.apple_catalog.enabled": "false"}),
+            apple_catalog_client=catalog,
+        )
+
+        artwork = manager.resolve(_activity())
+
+        self.assertIsNone(artwork)
+        self.assertEqual(catalog.lookups, [])
+
+    def test_catalog_best_result_ignores_unmatched_results(self) -> None:
+        result = _best_catalog_result(
+            [{"trackName": "Other", "artistName": "Someone Else", "artworkUrl100": "https://example.test/100x100bb.jpg"}],
+            artist="Artist",
+            album="Album",
+            title="Song",
+        )
+
+        self.assertIsNone(result)
+
+    def test_apple_artwork_url_is_resized(self) -> None:
+        url = "https://is1-ssl.mzstatic.com/image/thumb/Music/ab/cd/ef/100x100bb.jpg"
+
+        resized = _resize_apple_artwork_url(url, 600)
+
+        self.assertEqual(resized, "https://is1-ssl.mzstatic.com/image/thumb/Music/ab/cd/ef/600x600bb.jpg")
 
     def test_custom_url_artwork(self) -> None:
         manager = ArtworkManager(
@@ -101,6 +165,7 @@ class ArtworkManagerTests(unittest.TestCase):
                     }
                 ),
                 filebin_client=fake,
+                apple_catalog_client=FakeAppleCatalogClient(),
             )
 
             first = manager.resolve(_activity())
@@ -124,6 +189,7 @@ class ArtworkManagerTests(unittest.TestCase):
                     }
                 ),
                 filebin_client=fake,
+                apple_catalog_client=FakeAppleCatalogClient(),
             )
 
             manager.resolve(_activity())
@@ -145,6 +211,7 @@ class ArtworkManagerTests(unittest.TestCase):
                     }
                 ),
                 filebin_client=fake,
+                apple_catalog_client=FakeAppleCatalogClient(),
                 allow_upload=False,
             )
 
