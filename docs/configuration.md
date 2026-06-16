@@ -102,6 +102,8 @@ custom_url
 filebin
 ```
 
+The default provider is `filebin`, but no upload happens unless `artwork.filebin.path` points to a local image file.
+
 Use `custom_url` when you already have a public image URL:
 
 ```sh
@@ -110,7 +112,7 @@ dmp config set artwork.custom_url https://example.com/artwork.png
 dmp config set artwork.custom_text "Custom Artwork"
 ```
 
-Use `filebin` only when you want DisMusicPresence to upload a local custom image to Filebin and use that temporary public URL in Discord:
+Use `filebin` when you want DisMusicPresence to upload a local custom image to Filebin and use that temporary public URL in Discord:
 
 ```sh
 dmp config set artwork.provider filebin

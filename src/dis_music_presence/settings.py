@@ -14,7 +14,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     "format.listening": "Listening to \u266a {artist} - {title}",
     "format.watching_movie": "Watching {title}",
     "format.watching_episode": "Watching {show_title} - {episode_code} - {episode_title}",
-    "artwork.provider": "none",
+    "artwork.provider": "filebin",
     "artwork.custom_url": "",
     "artwork.custom_text": "",
     "artwork.filebin.path": "",

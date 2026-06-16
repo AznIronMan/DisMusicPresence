@@ -18,7 +18,7 @@ class CliTests(unittest.TestCase):
             code = main(["version"])
 
         self.assertEqual(code, 0)
-        self.assertIn("0.2.0", output.getvalue())
+        self.assertIn("0.2.1", output.getvalue())
 
     def test_config_init_and_show(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

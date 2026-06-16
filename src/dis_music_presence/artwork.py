@@ -155,7 +155,7 @@ class FilebinClient:
                 "Content-Type": content_type,
                 "Content-Length": str(len(content)),
                 "Content-SHA256": sha256,
-                "User-Agent": "DisMusicPresence/0.2.0",
+                "User-Agent": "DisMusicPresence/0.2.1",
             },
         )
         try:
@@ -186,7 +186,7 @@ class FilebinClient:
             url = self._bin_url(upload.bin_name)
         else:
             url = self._file_url(upload.bin_name, upload.filename)
-        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.2.0"})
+        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.2.1"})
         try:
             with urllib.request.urlopen(request, timeout=FILEBIN_TIMEOUT_SECONDS) as response:
                 status = getattr(response, "status", response.getcode())

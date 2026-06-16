@@ -48,6 +48,15 @@ class FakeFilebinClient:
 
 
 class ArtworkManagerTests(unittest.TestCase):
+    def test_filebin_default_does_nothing_without_path(self) -> None:
+        fake = FakeFilebinClient()
+        manager = ArtworkManager(_settings(), filebin_client=fake)
+
+        artwork = manager.resolve(_activity())
+
+        self.assertIsNone(artwork)
+        self.assertEqual(fake.uploads, [])
+
     def test_custom_url_artwork(self) -> None:
         manager = ArtworkManager(
             _settings(

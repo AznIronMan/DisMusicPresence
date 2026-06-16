@@ -50,6 +50,8 @@ Discord may still show the registered application name as the Rich Presence app 
 
 ## Artwork
 
+Filebin is the default artwork provider, but it does not upload anything until a local image path is configured.
+
 Use a public custom artwork URL:
 
 ```sh

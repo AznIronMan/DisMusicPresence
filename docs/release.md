@@ -17,6 +17,11 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.2.1 - 2026-06-16
+
+- Changed the default artwork provider to Filebin.
+- Kept Filebin uploads gated on an explicit local artwork path.
+
 ## 0.2.0 - 2026-06-16
 
 - Added optional Discord artwork assets.
