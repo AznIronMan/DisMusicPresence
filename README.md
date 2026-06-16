@@ -1,28 +1,44 @@
 # DisMusicPresence
 
-Version: `0.0.1`
+Version: `0.1.0`
 Last updated: `2026-06-16`
 
-DisMusicPresence is a planned local presence bridge for Discord. The goal is to read what is currently playing in Apple Music, Plex, and potentially other players, then publish a cleaner, configurable Discord presence such as:
+DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
 
 - `Listening to ♪ Artist - Song`
 - `Watching Movie Name`
 - `Watching Show Name - S01E02 - Episode Name`
 
-The project is being developed by Street Kings Productions, a Clark & Burke LLC company, for internal use first. It is open to the public for use, study, forks, and builds.
+The project is developed by Street Kings Productions, a Clark & Burke LLC company, for internal use first. It is open to the public for use, study, forks, and builds.
 
 ## Current Status
 
-`0.0.1` is the initial project scaffold. Runtime bridge code has not been added yet.
+`0.1.0` is the first application build-out. It includes:
 
-Planned implementation direction:
-
-- Python CLI application.
+- Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
-- Apple Music source support on macOS first.
-- Plex source support through Tautulli API.
-- Optional future sources for Spotify and Linux media player equivalents.
-- Configurable Discord presence formatting instead of hard-coded output.
+- Configurable listening and watching format templates.
+- Apple Music source provider for macOS.
+- Plex source provider through Tautulli or direct Plex server API fallback.
+- Discord local IPC integration with connect, update, clear, and diagnostic behavior.
+- Runtime loop with source priority, polling, dry-run mode, and shutdown cleanup.
+- Unit tests using Python standard library `unittest`.
+
+Windows and Linux are not primary test targets yet. Plex support is platform-neutral, and Apple Music reports unsupported status outside macOS.
+
+## Quick Start
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+dmp config init
+dmp config set discord.client_id YOUR_DISCORD_APPLICATION_CLIENT_ID
+dmp diagnostics
+dmp run
+```
+
+For macOS Apple Music only, the default source settings are enough once Discord is configured. For Plex, enable and configure either Tautulli or direct Plex server API settings.
 
 ## Project Rules
 
@@ -34,7 +50,7 @@ Planned implementation direction:
 
 ## Versioning
 
-This project starts at `0.0.1`.
+This project started at `0.0.1`.
 
 - Patch changes: documentation updates, bug fixes, small internal maintenance, and compatible behavior fixes.
 - Minor changes: new sources, new formatting features, new configuration options, and other meaningful feature additions.
@@ -50,8 +66,17 @@ User-facing documentation lives in `docs/`:
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
 - [Usage](docs/usage.md)
+- [Contributing](docs/contributing.md)
+- [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.1.0 - 2026-06-16
+
+- Added Python CLI package, settings management, configurable format templates, Discord IPC integration, runtime loop, diagnostics, and tests.
+- Added Apple Music source support for macOS.
+- Added Plex source support through Tautulli or direct Plex server API fallback with configured user matching.
+- Updated installation, configuration, usage, contribution, and release documentation.
 
 ### 0.0.1 - 2026-06-16
 

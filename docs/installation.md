@@ -1,16 +1,42 @@
 # Installation
 
-DisMusicPresence does not have runtime installation steps yet. Version `0.0.1` is the initial project scaffold.
+DisMusicPresence is currently installed from source.
 
-## Planned Requirements
+## Requirements
 
-- Python runtime for the future CLI application.
+- Python `3.11` or newer.
 - Discord desktop client for local rich presence support.
-- Apple Music for the planned macOS music source.
-- Tautulli for the planned Plex source.
+- A Discord application client ID.
+- Apple Music on macOS for Apple Music presence.
+- Tautulli or Plex server API access for Plex presence.
+
+There are no runtime third-party Python package dependencies in version `0.1.0`.
+
+## Install From Source
+
+```sh
+git clone https://github.com/AznIronMan/DisMusicPresence.git
+cd DisMusicPresence
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+dmp version
+```
+
+On Windows, activate the virtual environment with:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+## Development Check
+
+```sh
+python -m unittest discover -s tests
+```
 
 ## Dependency Policy
 
-Third-party dependencies should be installed through the documented package manager or project metadata once implementation begins. Dependencies should not be copied or bundled into this repository.
+Third-party dependencies should be installed through the documented package manager or project metadata when added. Dependencies should not be copied or bundled into this repository.
 
 Local virtual environments, dependency folders, generated artifacts, settings files, logs, and caches are ignored by git.

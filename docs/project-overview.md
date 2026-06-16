@@ -1,24 +1,42 @@
 # Project Overview
 
-DisMusicPresence is planned as a local bridge between media playback sources and Discord presence.
+DisMusicPresence is a local bridge between media playback sources and Discord presence.
 
-The project should make it possible to publish richer and more controllable status messages than the available one-purpose bridges. Target presence examples include:
+The application polls enabled media sources, normalizes the current activity into a common model, formats that activity with user-configurable templates, and updates Discord through the local IPC interface.
+
+Target presence examples include:
 
 - `Listening to ♪ Artist - Song`
 - `Watching Movie Name`
 - `Watching Show Name - S01E02 - Episode Name`
 
-## Planned Sources
+## Sources
 
 - Apple Music on macOS.
-- Plex activity through Tautulli API.
-- Spotify, if a practical local or API-based integration is added later.
-- Linux desktop media players through an appropriate platform equivalent when feasible.
+- Plex through Tautulli when available.
+- Plex through direct Plex server API when Tautulli is not available.
+- Spotify and Linux desktop media players may be added later.
 
-## Planned Output
+## Source Priority
 
-The primary output target is Discord rich presence. Formatting should be user configurable so the project can support different status styles without code changes.
+When multiple sources are enabled, the runtime checks them in configured priority order. The first source with active playback wins for that polling cycle.
 
-## Project Posture
+Default priority:
 
-This project is developed for Street Kings Productions internal use first, but is available publicly under the BSD 3-Clause License. Public users may use, fork, and build from the source while preserving the project license and attribution notices.
+```text
+apple_music,plex
+```
+
+## Discord Output
+
+Discord presence is updated only when the formatted text changes. When no enabled source has active playback, the app clears the previous presence.
+
+The Discord integration requires a Discord application client ID. The app does not bundle or create that application for users.
+
+## Platform Status
+
+- macOS: primary development platform and Apple Music target.
+- Windows: planned compatibility target for Discord and Plex behavior.
+- Linux: planned compatibility target for Discord and Plex behavior.
+
+Apple Music is macOS-only. Plex source behavior is designed to be platform-neutral.

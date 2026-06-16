@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dis-music-presence"
+version = "0.1.0"
+description = "Local media-to-Discord presence bridge for Apple Music, Plex, and future sources."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "BSD-3-Clause"
+authors = [
+  { name = "Street Kings Productions", email = "streetkings@cnb.llc" }
+]
+keywords = ["discord", "presence", "apple-music", "plex", "tautulli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Communications :: Chat",
+  "Topic :: Multimedia"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/AznIronMan/DisMusicPresence"
+Issues = "https://github.com/AznIronMan/DisMusicPresence/issues"
+
+[project.scripts]
+dmp = "dis_music_presence.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
