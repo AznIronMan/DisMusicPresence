@@ -17,6 +17,12 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.1.1 - 2026-06-16
+
+- Added `plex.user_names` for Plex account and Tautulli display-name aliases.
+- Kept `plex.username` as a backward-compatible single-name alias.
+- Clarified Plex user matching documentation.
+
 ## 0.1.0 - 2026-06-16
 
 - Added the first Python CLI implementation.

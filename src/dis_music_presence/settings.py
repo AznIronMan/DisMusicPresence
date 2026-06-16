@@ -21,6 +21,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     "tautulli.api_key": "",
     "plex.url": "",
     "plex.token": "",
+    "plex.user_names": "",
     "plex.username": "",
     "plex.user_id": "",
 }

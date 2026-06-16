@@ -12,6 +12,7 @@ dmp.settings
 .env
 .env.*
 !.env.example
+.private/
 
 # Internal project tracking
 .tasks/

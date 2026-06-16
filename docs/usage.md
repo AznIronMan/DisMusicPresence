@@ -69,7 +69,7 @@ For Tautulli:
 ```sh
 dmp config set plex.enabled true
 dmp config set plex.provider auto
-dmp config set plex.username YOUR_PLEX_USERNAME
+dmp config set plex.user_names YOUR_PLEX_NAME,YOUR_TAUTULLI_DISPLAY_NAME
 dmp config set tautulli.url http://YOUR_TAUTULLI_HOST:8181
 dmp config set tautulli.api_key YOUR_TAUTULLI_API_KEY
 ```
@@ -79,9 +79,11 @@ For direct Plex server API:
 ```sh
 dmp config set plex.enabled true
 dmp config set plex.provider plex
-dmp config set plex.username YOUR_PLEX_USERNAME
+dmp config set plex.user_names YOUR_PLEX_NAME
 dmp config set plex.url http://YOUR_PLEX_HOST:32400
 dmp config set plex.token YOUR_PLEX_TOKEN
 ```
+
+Use `plex.user_names` for every name that may identify the same Plex user. For example, if Plex shows `AznIronMan` but Tautulli session activity shows `Geoff`, set `plex.user_names` to `AznIronMan,Geoff`.
 
 Movies format as `Watching Movie Name`. TV episodes format as `Watching Show Name - SxxExx - Episode Name`.

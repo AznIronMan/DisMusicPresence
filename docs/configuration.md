@@ -87,7 +87,7 @@ Apple Music is supported on macOS only. The first time the app checks Apple Musi
 ```text
 plex.enabled
 plex.provider
-plex.username
+plex.user_names
 plex.user_id
 tautulli.url
 tautulli.api_key
@@ -105,14 +105,22 @@ plex
 
 Use `auto` to prefer Tautulli when configured and fall back to direct Plex server API when needed.
 
-Configure either `plex.username` or `plex.user_id` so the app selects the right user's playback session. This prevents another Plex user's activity from being published.
+Configure either `plex.user_names` or `plex.user_id` so the app selects the right user's playback session. This prevents another Plex user's activity from being published.
+
+`plex.user_names` is a comma- or pipe-separated list of names that may identify the same Plex user in different APIs. For example, a Plex account name may be `AznIronMan` while Tautulli displays the active session as `Geoff`; configure both:
+
+```sh
+dmp config set plex.user_names AznIronMan,Geoff
+```
+
+`plex.username` remains supported as a backward-compatible single-name alias, but `plex.user_names` is preferred.
 
 Example Tautulli setup:
 
 ```sh
 dmp config set plex.enabled true
 dmp config set plex.provider auto
-dmp config set plex.username YOUR_PLEX_USERNAME
+dmp config set plex.user_names YOUR_PLEX_NAME,YOUR_TAUTULLI_DISPLAY_NAME
 dmp config set tautulli.url http://YOUR_TAUTULLI_HOST:8181
 dmp config set tautulli.api_key YOUR_TAUTULLI_API_KEY
 ```
@@ -122,7 +130,7 @@ Example direct Plex server API setup:
 ```sh
 dmp config set plex.enabled true
 dmp config set plex.provider plex
-dmp config set plex.username YOUR_PLEX_USERNAME
+dmp config set plex.user_names YOUR_PLEX_NAME
 dmp config set plex.url http://YOUR_PLEX_HOST:32400
 dmp config set plex.token YOUR_PLEX_TOKEN
 ```

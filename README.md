@@ -1,6 +1,6 @@
 # DisMusicPresence
 
-Version: `0.1.0`
+Version: `0.1.1`
 Last updated: `2026-06-16`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
@@ -13,7 +13,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.1.0` is the first application build-out. It includes:
+`0.1.1` is the current application build-out. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
@@ -70,6 +70,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.1.1 - 2026-06-16
+
+- Added clearer Plex user match naming with `plex.user_names` for comma- or pipe-separated aliases.
+- Kept `plex.username` as a backward-compatible single-name alias.
+- Updated Plex documentation for cases where Tautulli shows a display name that differs from the Plex account name.
 
 ### 0.1.0 - 2026-06-16
 

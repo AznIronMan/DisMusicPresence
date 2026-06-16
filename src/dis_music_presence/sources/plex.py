@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -33,14 +34,14 @@ class PlexProvider(SourceProvider):
         provider = self._provider_mode()
         has_tautulli = bool(self.settings.get("tautulli.url") and self.settings.get("tautulli.api_key"))
         has_plex = bool(self.settings.get("plex.url") and self.settings.get("plex.token"))
-        has_user = bool(self.settings.get("plex.username") or self.settings.get("plex.user_id"))
+        has_user = bool(self._expected_user_names() or self.settings.get("plex.user_id"))
 
         if not enabled:
             return SourceCapability(self.name, False, True, True, "Plex source is disabled.")
         if provider not in {"auto", "tautulli", "plex"}:
             return SourceCapability(self.name, enabled, True, False, "plex.provider must be auto, tautulli, or plex.")
         if not has_user:
-            return SourceCapability(self.name, enabled, True, False, "Configure plex.username or plex.user_id.")
+            return SourceCapability(self.name, enabled, True, False, "Configure plex.user_names or plex.user_id.")
         if provider == "tautulli" and not has_tautulli:
             return SourceCapability(self.name, enabled, True, False, "Tautulli URL and API key are required.")
         if provider == "plex" and not has_plex:
@@ -187,7 +188,7 @@ class PlexProvider(SourceProvider):
 
     def _session_matches_user(self, session: dict[str, Any]) -> bool:
         expected_id = self.settings.get("plex.user_id")
-        expected_name = self.settings.get("plex.username").casefold()
+        expected_names = self._expected_user_names()
         session_id = str(session.get("user_id") or session.get("user_id_hash") or "")
         session_names = [
             str(session.get("user") or ""),
@@ -196,13 +197,13 @@ class PlexProvider(SourceProvider):
         ]
         if expected_id and session_id == expected_id:
             return True
-        if expected_name and any(name.casefold() == expected_name for name in session_names if name):
+        if expected_names and any(name.casefold() in expected_names for name in session_names if name):
             return True
         return False
 
     def _plex_video_matches_user(self, video: ET.Element) -> bool:
         expected_id = self.settings.get("plex.user_id")
-        expected_name = self.settings.get("plex.username").casefold()
+        expected_names = self._expected_user_names()
         user = video.find("User")
         if user is None:
             return False
@@ -210,9 +211,20 @@ class PlexProvider(SourceProvider):
         title = user.get("title") or user.get("username") or ""
         if expected_id and user_id == expected_id:
             return True
-        if expected_name and title.casefold() == expected_name:
+        if expected_names and title.casefold() in expected_names:
             return True
         return False
+
+    def _expected_user_names(self) -> set[str]:
+        names: set[str] = set()
+        configured = self.settings.get("plex.user_names")
+        legacy = self.settings.get("plex.username")
+        for value in (configured, legacy):
+            for part in re.split(r"[,|]", value):
+                name = part.strip().casefold()
+                if name:
+                    names.add(name)
+        return names
 
     def _provider_mode(self) -> str:
         return self.settings.get("plex.provider", "auto").strip().lower() or "auto"
@@ -237,7 +249,7 @@ def _http_json(base_url: str, query: dict[str, str]) -> dict[str, Any]:
 
 def _http_bytes(base_url: str, path: str, query: dict[str, str]) -> bytes:
     url = _build_url(base_url, path, query)
-    request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.1.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.1.1"})
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             return response.read()

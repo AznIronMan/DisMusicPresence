@@ -16,7 +16,7 @@ def _settings(**overrides: str) -> Settings:
         {
             "plex.enabled": "true",
             "plex.provider": "auto",
-            "plex.username": "alex",
+            "plex.user_names": "alex",
             "tautulli.url": "http://tautulli.local",
             "tautulli.api_key": "key",
             "plex.url": "http://plex.local:32400",
@@ -51,8 +51,28 @@ class PlexProviderTests(unittest.TestCase):
         self.assertEqual(activity.season, 1)
         self.assertEqual(activity.episode, 2)
 
+    def test_tautulli_matches_user_aliases(self) -> None:
+        provider = PlexProvider(_settings(**{"plex.user_names": "AznIronMan,Geoff"}))
+
+        activity = provider._activity_from_tautulli_sessions(
+            [{"user": "Geoff", "state": "playing", "media_type": "movie", "title": "Movie"}]
+        )
+
+        self.assertEqual(activity.kind, ActivityKind.WATCHING)
+        self.assertEqual(activity.media_type, MediaType.MOVIE)
+        self.assertEqual(activity.title, "Movie")
+
+    def test_tautulli_accepts_pipe_delimited_aliases(self) -> None:
+        provider = PlexProvider(_settings(**{"plex.user_names": "AznIronMan|Geoff"}))
+
+        activity = provider._activity_from_tautulli_sessions(
+            [{"user": "Geoff", "state": "playing", "media_type": "movie", "title": "Movie"}]
+        )
+
+        self.assertEqual(activity.kind, ActivityKind.WATCHING)
+
     def test_tautulli_requires_matching_user(self) -> None:
-        provider = PlexProvider(_settings(plex_username="alex"))
+        provider = PlexProvider(_settings(**{"plex.user_names": "alex"}))
 
         activity = provider._activity_from_tautulli_sessions(
             [{"user": "other", "state": "playing", "media_type": "movie", "title": "Wrong"}]
@@ -61,7 +81,7 @@ class PlexProviderTests(unittest.TestCase):
         self.assertEqual(activity.kind, ActivityKind.IDLE)
 
     def test_plex_xml_movie_matches_user_id(self) -> None:
-        provider = PlexProvider(_settings(**{"plex.username": "", "plex.user_id": "42"}))
+        provider = PlexProvider(_settings(**{"plex.user_names": "", "plex.username": "", "plex.user_id": "42"}))
         xml = ET.fromstring(
             """
             <MediaContainer>
