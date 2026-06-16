@@ -82,6 +82,47 @@ apple_music.enabled
 
 Apple Music is supported on macOS only. The first time the app checks Apple Music, macOS may ask for automation permission.
 
+## Artwork Settings
+
+```text
+artwork.provider
+artwork.custom_url
+artwork.custom_text
+artwork.filebin.path
+artwork.filebin.base_url
+artwork.filebin.bin
+artwork.filebin.delete_on_shutdown
+```
+
+`artwork.provider` supports:
+
+```text
+none
+custom_url
+filebin
+```
+
+Use `custom_url` when you already have a public image URL:
+
+```sh
+dmp config set artwork.provider custom_url
+dmp config set artwork.custom_url https://example.com/artwork.png
+dmp config set artwork.custom_text "Custom Artwork"
+```
+
+Use `filebin` only when you want DisMusicPresence to upload a local custom image to Filebin and use that temporary public URL in Discord:
+
+```sh
+dmp config set artwork.provider filebin
+dmp config set artwork.filebin.path .private/artwork.png
+```
+
+By default, Filebin uploads use `https://filebin.net`, a generated bin name, and cleanup on shutdown. If `artwork.filebin.bin` is empty, DisMusicPresence deletes the generated bin during cleanup. If you set a custom bin, DisMusicPresence deletes only the uploaded file so it does not remove unrelated files in the bin.
+
+Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMusicPresence rejects Filebin uploads larger than 10 MB.
+
+Filebin artwork is public while active. Do not upload private, sensitive, or copyrighted images unless you are comfortable with that exposure.
+
 ## Plex Settings
 
 ```text

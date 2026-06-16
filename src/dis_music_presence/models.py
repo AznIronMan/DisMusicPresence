@@ -58,6 +58,8 @@ class FormattedPresence:
     text: str
     activity_type: int
     source: str
+    image_url: str = ""
+    image_text: str = ""
 
 
 DISCORD_ACTIVITY_TYPES = {

@@ -1,6 +1,6 @@
 # DisMusicPresence
 
-Version: `0.1.2`
+Version: `0.2.0`
 Last updated: `2026-06-16`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
@@ -13,7 +13,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.1.2` is the current application build-out. It includes:
+`0.2.0` is the current application build-out. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
@@ -21,6 +21,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 - Apple Music source provider for macOS.
 - Plex source provider through Tautulli or direct Plex server API fallback.
 - Discord local IPC integration with connect, update, clear, and diagnostic behavior.
+- Optional Discord artwork assets from a public custom URL or Filebin-uploaded local custom image.
 - Runtime loop with source priority, polling, dry-run mode, and shutdown cleanup.
 - Unit tests using Python standard library `unittest`.
 
@@ -70,6 +71,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.2.0 - 2026-06-16
+
+- Added optional artwork settings for Discord Rich Presence large image assets.
+- Added custom public artwork URL support.
+- Added optional Filebin upload support for local custom artwork images with cleanup on shutdown.
 
 ### 0.1.2 - 2026-06-16
 

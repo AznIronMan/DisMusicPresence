@@ -48,6 +48,24 @@ dmp run --dry-run
 
 Discord may still show the registered application name as the Rich Presence app label. DisMusicPresence sends the formatted media text as the activity details and asks Discord to use details for the visible status text where supported. Long media text is shortened before sending because Discord limits Rich Presence text fields.
 
+## Artwork
+
+Use a public custom artwork URL:
+
+```sh
+dmp config set artwork.provider custom_url
+dmp config set artwork.custom_url https://example.com/artwork.png
+```
+
+Use Filebin for a local custom image:
+
+```sh
+dmp config set artwork.provider filebin
+dmp config set artwork.filebin.path .private/artwork.png
+```
+
+Filebin uploads are temporary public files. DisMusicPresence keeps the uploaded image alive while the presence is active and deletes it on shutdown by default. If deletion fails, Filebin also expires uploads automatically.
+
 ## Publish A Test Presence
 
 ```sh

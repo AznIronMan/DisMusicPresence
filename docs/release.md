@@ -17,6 +17,12 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.2.0 - 2026-06-16
+
+- Added optional Discord artwork assets.
+- Added custom public artwork URL support.
+- Added optional Filebin upload support for local custom artwork with cleanup on shutdown.
+
 ## 0.1.2 - 2026-06-16
 
 - Updated Discord Rich Presence payloads to prefer activity details for visible status text where supported.

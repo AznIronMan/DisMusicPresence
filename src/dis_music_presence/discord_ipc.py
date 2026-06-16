@@ -115,7 +115,7 @@ def check_discord(client_id: str) -> DiscordStatus:
 
 def build_activity_payload(presence: FormattedPresence) -> dict[str, object]:
     details = _activity_details(presence)
-    return {
+    payload: dict[str, object] = {
         "type": presence.activity_type,
         "name": _truncate_activity_field(details),
         "details": _truncate_activity_field(details),
@@ -123,6 +123,12 @@ def build_activity_payload(presence: FormattedPresence) -> dict[str, object]:
         "status_display_type": STATUS_DISPLAY_DETAILS,
         "instance": False,
     }
+    if presence.image_url:
+        payload["assets"] = {
+            "large_image": presence.image_url,
+            "large_text": _truncate_activity_field(presence.image_text or details),
+        }
+    return payload
 
 
 def _activity_details(presence: FormattedPresence) -> str:

@@ -44,6 +44,25 @@ class DiscordIpcTests(unittest.TestCase):
         self.assertLessEqual(len(str(payload["details"])), MAX_ACTIVITY_FIELD_LENGTH)
         self.assertTrue(str(payload["details"]).endswith("..."))
 
+    def test_activity_payload_includes_artwork_assets(self) -> None:
+        presence = FormattedPresence(
+            text="Listening to \u266a Artist - Song",
+            activity_type=2,
+            source="Apple Music",
+            image_url="https://example.test/artwork.png",
+            image_text="Album - Artist",
+        )
+
+        payload = build_activity_payload(presence)
+
+        self.assertEqual(
+            payload["assets"],
+            {
+                "large_image": "https://example.test/artwork.png",
+                "large_text": "Album - Artist",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

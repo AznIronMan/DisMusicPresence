@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import replace
 
+from .artwork import ArtworkError, ArtworkManager
 from .discord_ipc import DiscordError, DiscordIpcClient
 from .formatter import PresenceFormatter
 from .models import FormattedPresence, MediaActivity
@@ -24,10 +26,11 @@ class PresenceRuntime:
         self.settings = settings
         self.providers = providers or build_providers(settings)
         self.formatter = PresenceFormatter(settings)
+        self.artwork = ArtworkManager(settings, allow_upload=not dry_run)
         self.discord_factory = discord_factory
         self.dry_run = dry_run
         self._discord: DiscordIpcClient | None = None
-        self._last_text: str | None = None
+        self._last_presence_key: tuple[str, str] | None = None
 
     def tick(self) -> str:
         activity = self._select_activity()
@@ -38,11 +41,20 @@ class PresenceRuntime:
         if presence is None:
             return self._clear_if_needed()
 
-        if presence.text == self._last_text:
+        try:
+            artwork = self.artwork.resolve(activity)
+        except ArtworkError as exc:
+            LOGGER.warning("Artwork unavailable: %s", exc)
+            artwork = None
+        if artwork is not None:
+            presence = replace(presence, image_url=artwork.image_url, image_text=artwork.image_text)
+
+        presence_key = (presence.text, presence.image_url)
+        if presence_key == self._last_presence_key:
             return f"unchanged: {presence.text}"
 
         self._set_presence(presence)
-        self._last_text = presence.text
+        self._last_presence_key = presence_key
         return f"updated: {presence.text}"
 
     def run_forever(self) -> None:
@@ -64,7 +76,11 @@ class PresenceRuntime:
             finally:
                 self._discord.close()
                 self._discord = None
-        self._last_text = None
+        try:
+            self.artwork.cleanup()
+        except ArtworkError as exc:
+            LOGGER.warning("Could not clean up artwork: %s", exc)
+        self._last_presence_key = None
 
     def _select_activity(self) -> MediaActivity | None:
         provider_by_name = {provider.name: provider for provider in self.providers}
@@ -87,11 +103,15 @@ class PresenceRuntime:
         discord.set_activity(presence)
 
     def _clear_if_needed(self) -> str:
-        if self._last_text is None:
+        if self._last_presence_key is None:
             return "idle: no active playback"
         if not self.dry_run and self.settings.bool("discord.enabled", True):
             self._discord_client().clear_activity()
-        self._last_text = None
+        try:
+            self.artwork.cleanup()
+        except ArtworkError as exc:
+            LOGGER.warning("Could not clean up artwork: %s", exc)
+        self._last_presence_key = None
         return "cleared: no active playback"
 
     def _discord_client(self) -> DiscordIpcClient:
