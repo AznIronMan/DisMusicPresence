@@ -3,6 +3,9 @@ from __future__ import annotations
 import hashlib
 import json
 import mimetypes
+import platform
+import subprocess
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -18,6 +21,34 @@ MAX_FILEBIN_UPLOAD_BYTES = 10 * 1024 * 1024
 FILEBIN_TIMEOUT_SECONDS = 10
 APPLE_CATALOG_TIMEOUT_SECONDS = 5
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+IMAGE_TYPE_SUFFIXES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+
+APPLE_MUSIC_ARTWORK_SCRIPT = """
+on run argv
+    set outputPath to POSIX file (item 1 of argv)
+
+    tell application "System Events"
+        if not (exists process "Music") then return "not_running"
+    end tell
+
+    tell application "Music"
+        if player state is not playing then return "idle"
+        if (count of artworks of current track) is 0 then return "no_artwork"
+        set artData to data of artwork 1 of current track
+    end tell
+
+    set outFile to open for access outputPath with write permission
+    set eof outFile to 0
+    write artData to outFile starting at 0
+    close access outFile
+    return "ok"
+end run
+""".strip()
 
 
 class ArtworkError(RuntimeError):
@@ -38,20 +69,30 @@ class UploadedArtwork(ArtworkAsset):
     delete_bin: bool = False
 
 
+@dataclass(frozen=True)
+class _ArtworkFile:
+    path: Path
+    temporary: bool = False
+    cache_key: tuple[str, str, str, str] | None = None
+
+
 class ArtworkManager:
     def __init__(
         self,
         settings: Settings,
         filebin_client: FilebinClient | None = None,
         apple_catalog_client: AppleCatalogClient | None = None,
+        apple_music_artwork_exporter: AppleMusicArtworkExporter | None = None,
         allow_upload: bool = True,
     ) -> None:
         self.settings = settings
         self._filebin_client = filebin_client
         self._apple_catalog_client = apple_catalog_client
+        self._apple_music_artwork_exporter = apple_music_artwork_exporter
         self.allow_upload = allow_upload
         self._uploaded: UploadedArtwork | None = None
         self._uploaded_path: Path | None = None
+        self._uploaded_cache_key: tuple[str, str, str, str] | None = None
         self._catalog_cache: dict[tuple[str, str, str], ArtworkAsset | None] = {}
 
     def resolve(self, activity: MediaActivity) -> ArtworkAsset | None:
@@ -76,6 +117,7 @@ class ArtworkManager:
             self._client().delete(self._uploaded)
         self._uploaded = None
         self._uploaded_path = None
+        self._uploaded_cache_key = None
 
     def _custom_url(self, activity: MediaActivity) -> ArtworkAsset | None:
         url = self.settings.get("artwork.custom_url").strip()
@@ -87,23 +129,38 @@ class ArtworkManager:
     def _filebin(self, activity: MediaActivity) -> ArtworkAsset | None:
         if not self.allow_upload:
             return None
-        path_value = self.settings.get("artwork.filebin.path").strip()
-        if not path_value:
-            return None
-        path = Path(path_value).expanduser().resolve()
-        if not path.is_file():
-            raise ArtworkError(f"Artwork file not found: {path}")
 
-        file_bytes = path.read_bytes()
+        activity_cache_key = _activity_cache_key(activity)
+        if (
+            not self.settings.get("artwork.filebin.path").strip()
+            and self._uploaded is not None
+            and self._uploaded_cache_key == activity_cache_key
+        ):
+            return self._uploaded
+
+        candidate = self._filebin_candidate(activity, activity_cache_key)
+        if candidate is None:
+            return None
+
+        path = candidate.path
+        try:
+            if not path.is_file():
+                raise ArtworkError(f"Artwork file not found: {path}")
+            file_bytes = path.read_bytes()
+        finally:
+            if candidate.temporary:
+                path.unlink(missing_ok=True)
+
         if len(file_bytes) > MAX_FILEBIN_UPLOAD_BYTES:
             raise ArtworkError("Artwork file is too large for DisMusicPresence Filebin uploads.")
 
-        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        content_type = _content_type(path, file_bytes)
         if content_type not in SUPPORTED_IMAGE_TYPES:
             raise ArtworkError(f"Unsupported artwork image type: {content_type}")
 
         digest = hashlib.sha256(file_bytes).hexdigest()
-        if self._uploaded and self._uploaded_path == path and self._uploaded.sha256 == digest:
+        if self._uploaded and self._uploaded.sha256 == digest:
+            self._uploaded_cache_key = candidate.cache_key
             return self._uploaded
 
         self.cleanup()
@@ -111,7 +168,7 @@ class ArtworkManager:
         delete_bin = not bin_name
         if not bin_name:
             bin_name = f"dmp-{uuid.uuid4().hex[:16]}"
-        filename = _artwork_filename(path, digest)
+        filename = _artwork_filename(path, digest, content_type)
         uploaded = self._client().upload(
             bin_name=bin_name,
             filename=filename,
@@ -122,8 +179,28 @@ class ArtworkManager:
             delete_bin=delete_bin,
         )
         self._uploaded = uploaded
-        self._uploaded_path = path
+        self._uploaded_path = None if candidate.temporary else path
+        self._uploaded_cache_key = candidate.cache_key
         return uploaded
+
+    def _filebin_candidate(
+        self,
+        activity: MediaActivity,
+        activity_cache_key: tuple[str, str, str, str],
+    ) -> _ArtworkFile | None:
+        path_value = self.settings.get("artwork.filebin.path").strip()
+        if path_value:
+            return _ArtworkFile(Path(path_value).expanduser().resolve())
+
+        if not self.settings.bool("artwork.apple_music.enabled", True):
+            return None
+        exported = self._apple_music_exporter().export(
+            activity,
+            timeout_seconds=self.settings.int("apple_music.timeout_seconds", 10),
+        )
+        if exported is None:
+            return None
+        return _ArtworkFile(exported, temporary=True, cache_key=activity_cache_key)
 
     def _apple_catalog(self, activity: MediaActivity) -> ArtworkAsset | None:
         if not self.settings.bool("artwork.apple_catalog.enabled", True):
@@ -164,6 +241,38 @@ class ArtworkManager:
             self._apple_catalog_client = AppleCatalogClient()
         return self._apple_catalog_client
 
+    def _apple_music_exporter(self) -> AppleMusicArtworkExporter:
+        if self._apple_music_artwork_exporter is None:
+            self._apple_music_artwork_exporter = AppleMusicArtworkExporter()
+        return self._apple_music_artwork_exporter
+
+
+class AppleMusicArtworkExporter:
+    def export(self, activity: MediaActivity, timeout_seconds: int) -> Path | None:
+        if activity.source != "Apple Music" or not activity.title:
+            return None
+        if platform.system() != "Darwin":
+            return None
+
+        output_path = _temporary_artwork_path()
+        try:
+            result = subprocess.run(
+                ["osascript", "-e", APPLE_MUSIC_ARTWORK_SCRIPT, str(output_path)],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            output_path.unlink(missing_ok=True)
+            return None
+
+        status = result.stdout.splitlines()[0].strip() if result.stdout.splitlines() else ""
+        if result.returncode != 0 or status != "ok" or not output_path.is_file() or output_path.stat().st_size == 0:
+            output_path.unlink(missing_ok=True)
+            return None
+        return output_path
+
 
 class AppleCatalogClient:
     def __init__(self, base_url: str = "https://itunes.apple.com/search") -> None:
@@ -182,7 +291,7 @@ class AppleCatalogClient:
     ) -> ArtworkAsset | None:
         query = _catalog_query(artist=artist, album=album, title=title, country=country)
         url = f"{self.base_url}?{urllib.parse.urlencode(query)}"
-        request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.3.0"})
+        request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.4.0"})
         try:
             with urllib.request.urlopen(request, timeout=APPLE_CATALOG_TIMEOUT_SECONDS) as response:
                 data = response.read()
@@ -235,7 +344,7 @@ class FilebinClient:
                 "Content-Type": content_type,
                 "Content-Length": str(len(content)),
                 "Content-SHA256": sha256,
-                "User-Agent": "DisMusicPresence/0.3.0",
+                "User-Agent": "DisMusicPresence/0.4.0",
             },
         )
         try:
@@ -266,7 +375,7 @@ class FilebinClient:
             url = self._bin_url(upload.bin_name)
         else:
             url = self._file_url(upload.bin_name, upload.filename)
-        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.3.0"})
+        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.4.0"})
         try:
             with urllib.request.urlopen(request, timeout=FILEBIN_TIMEOUT_SECONDS) as response:
                 status = getattr(response, "status", response.getcode())
@@ -303,11 +412,46 @@ def _validate_public_url(url: str) -> None:
         raise ArtworkError(f"Invalid public artwork URL: {url}")
 
 
-def _artwork_filename(path: Path, digest: str) -> str:
+def _temporary_artwork_path() -> Path:
+    root = Path(tempfile.gettempdir()) / "dis-music-presence"
+    root.mkdir(parents=True, exist_ok=True)
+    return root / f"apple-music-artwork-{uuid.uuid4().hex}.img"
+
+
+def _content_type(path: Path, content: bytes) -> str:
+    guessed = mimetypes.guess_type(path.name)[0]
+    if guessed in SUPPORTED_IMAGE_TYPES:
+        return guessed
+    detected = _content_type_from_magic(content)
+    return detected or guessed or "application/octet-stream"
+
+
+def _content_type_from_magic(content: bytes) -> str:
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if content.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if content.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if len(content) >= 12 and content.startswith(b"RIFF") and content[8:12] == b"WEBP":
+        return "image/webp"
+    return ""
+
+
+def _artwork_filename(path: Path, digest: str, content_type: str = "") -> str:
     suffix = path.suffix.lower()
     if suffix not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
-        suffix = ".img"
+        suffix = IMAGE_TYPE_SUFFIXES.get(content_type, ".img")
     return f"dmp-artwork-{digest[:12]}{suffix}"
+
+
+def _activity_cache_key(activity: MediaActivity) -> tuple[str, str, str, str]:
+    return (
+        activity.source.casefold(),
+        activity.artist.casefold(),
+        activity.album.casefold(),
+        activity.title.casefold(),
+    )
 
 
 def _catalog_query(*, artist: str, album: str, title: str, country: str) -> dict[str, str]:

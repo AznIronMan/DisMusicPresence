@@ -1,6 +1,6 @@
 # DisMusicPresence
 
-Version: `0.3.0`
+Version: `0.4.0`
 Last updated: `2026-06-16`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
@@ -13,7 +13,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.3.0` is the current application build-out. It includes:
+`0.4.0` is the current application build-out. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
@@ -21,8 +21,9 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 - Apple Music source provider for macOS.
 - Plex source provider through Tautulli or direct Plex server API fallback.
 - Discord local IPC integration with connect, update, clear, and diagnostic behavior.
-- Optional Discord artwork assets from a public custom URL or Filebin-uploaded local custom image.
-- Automatic Apple Music artwork lookup through Apple/iTunes catalog when local Filebin artwork is not configured.
+- Optional Discord artwork assets from a public custom URL, Filebin-uploaded local image, Filebin-uploaded current Apple Music artwork, or Apple/iTunes catalog lookup.
+- Automatic Apple Music artwork export through Music.app when Filebin is enabled and no local Filebin artwork path is configured.
+- Apple/iTunes catalog fallback when local Apple Music artwork export is unavailable.
 - Runtime loop with source priority, polling, dry-run mode, and shutdown cleanup.
 - Unit tests using Python standard library `unittest`.
 
@@ -72,6 +73,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.4.0 - 2026-06-16
+
+- Added current Apple Music artwork export through Music.app for Filebin-backed Discord artwork.
+- Kept Apple/iTunes catalog artwork as fallback when local Apple Music artwork export is unavailable.
+- Added an `artwork.apple_music.enabled` setting for Apple Music artwork export.
 
 ### 0.3.0 - 2026-06-16
 

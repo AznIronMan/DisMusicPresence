@@ -95,6 +95,7 @@ artwork.filebin.path
 artwork.filebin.base_url
 artwork.filebin.bin
 artwork.filebin.delete_on_shutdown
+artwork.apple_music.enabled
 artwork.apple_catalog.enabled
 artwork.apple_catalog.country
 artwork.apple_catalog.size
@@ -109,7 +110,7 @@ apple_catalog
 filebin
 ```
 
-The default provider is `filebin`. No Filebin upload happens unless `artwork.filebin.path` points to a local image file. When Filebin has no local image path configured, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
+The default provider is `filebin`. If `artwork.filebin.path` points to a local image file, that image is uploaded to Filebin. If no local path is configured and `artwork.apple_music.enabled` is true, Apple Music tracks export the current Music.app artwork and upload it to Filebin. When local artwork is unavailable, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
 
 Use `custom_url` when you already have a public image URL:
 
@@ -131,6 +132,12 @@ By default, Filebin uploads use `https://filebin.net`, a generated bin name, and
 Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMusicPresence rejects Filebin uploads larger than 10 MB.
 
 Filebin artwork is public while active. Do not upload private, sensitive, or copyrighted images unless you are comfortable with that exposure.
+
+Disable automatic current Apple Music artwork export:
+
+```sh
+dmp config set artwork.apple_music.enabled false
+```
 
 Use `apple_catalog` when you want only Apple/iTunes catalog artwork and no Filebin fallback:
 

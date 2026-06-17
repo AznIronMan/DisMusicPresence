@@ -17,6 +17,12 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.4.0 - 2026-06-16
+
+- Added current Apple Music artwork export through Music.app for Filebin-backed Discord artwork.
+- Kept Apple/iTunes catalog artwork as fallback when local Apple Music artwork export is unavailable.
+- Added an `artwork.apple_music.enabled` setting for Apple Music artwork export.
+
 ## 0.3.0 - 2026-06-16
 
 - Added Apple/iTunes catalog artwork lookup for Apple Music.

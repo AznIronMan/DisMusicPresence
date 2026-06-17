@@ -21,6 +21,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     "artwork.filebin.base_url": "https://filebin.net",
     "artwork.filebin.bin": "",
     "artwork.filebin.delete_on_shutdown": "true",
+    "artwork.apple_music.enabled": "true",
     "artwork.apple_catalog.enabled": "true",
     "artwork.apple_catalog.country": "US",
     "artwork.apple_catalog.size": "600",

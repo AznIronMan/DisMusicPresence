@@ -58,28 +58,115 @@ class FakeAppleCatalogClient:
         return self.result
 
 
+class FakeAppleMusicArtworkExporter:
+    def __init__(self, path: Path | None = None) -> None:
+        self.path = path
+        self.exports: list[dict[str, object]] = []
+
+    def export(self, activity: MediaActivity, timeout_seconds: int) -> Path | None:
+        self.exports.append({"activity": activity, "timeout_seconds": timeout_seconds})
+        return self.path
+
+
 class ArtworkManagerTests(unittest.TestCase):
-    def test_filebin_default_does_nothing_without_path(self) -> None:
+    def test_filebin_default_does_nothing_without_artwork(self) -> None:
         fake = FakeFilebinClient()
         catalog = FakeAppleCatalogClient()
-        manager = ArtworkManager(_settings(), filebin_client=fake, apple_catalog_client=catalog)
+        exporter = FakeAppleMusicArtworkExporter()
+        manager = ArtworkManager(
+            _settings(),
+            filebin_client=fake,
+            apple_catalog_client=catalog,
+            apple_music_artwork_exporter=exporter,
+        )
 
         artwork = manager.resolve(_activity())
 
         self.assertIsNone(artwork)
         self.assertEqual(fake.uploads, [])
         self.assertEqual(len(catalog.lookups), 1)
+        self.assertEqual(len(exporter.exports), 1)
+
+    def test_filebin_default_uploads_current_apple_music_artwork(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cover.img"
+            path.write_bytes(b"\x89PNG\r\n\x1a\npng-bytes")
+            fake = FakeFilebinClient()
+            catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
+            exporter = FakeAppleMusicArtworkExporter(path)
+            manager = ArtworkManager(
+                _settings(),
+                filebin_client=fake,
+                apple_catalog_client=catalog,
+                apple_music_artwork_exporter=exporter,
+            )
+
+            artwork = manager.resolve(_activity())
+
+            self.assertEqual(len(fake.uploads), 1)
+            self.assertEqual(
+                artwork.image_url,
+                f"https://filebin.test/{fake.uploads[0]['bin_name']}/{fake.uploads[0]['filename']}",
+            )
+            self.assertEqual(fake.uploads[0]["content_type"], "image/png")
+            self.assertTrue(str(fake.uploads[0]["filename"]).endswith(".png"))
+            self.assertEqual(catalog.lookups, [])
+            self.assertFalse(path.exists())
+
+    def test_filebin_default_reuses_current_apple_music_artwork_upload(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cover.img"
+            path.write_bytes(b"\x89PNG\r\n\x1a\npng-bytes")
+            fake = FakeFilebinClient()
+            exporter = FakeAppleMusicArtworkExporter(path)
+            manager = ArtworkManager(
+                _settings(),
+                filebin_client=fake,
+                apple_catalog_client=FakeAppleCatalogClient(),
+                apple_music_artwork_exporter=exporter,
+            )
+
+            first = manager.resolve(_activity())
+            second = manager.resolve(_activity())
+
+            self.assertEqual(first, second)
+            self.assertEqual(len(fake.uploads), 1)
+            self.assertEqual(len(exporter.exports), 1)
 
     def test_filebin_default_falls_back_to_apple_catalog(self) -> None:
         fake = FakeFilebinClient()
         catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
-        manager = ArtworkManager(_settings(), filebin_client=fake, apple_catalog_client=catalog)
+        manager = ArtworkManager(
+            _settings(),
+            filebin_client=fake,
+            apple_catalog_client=catalog,
+            apple_music_artwork_exporter=FakeAppleMusicArtworkExporter(),
+        )
 
         artwork = manager.resolve(_activity())
 
         self.assertEqual(artwork.image_url, "https://is1-ssl.mzstatic.com/image.jpg")
         self.assertEqual(fake.uploads, [])
         self.assertEqual(catalog.lookups[0]["title"], "Song")
+
+    def test_current_apple_music_artwork_can_be_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cover.img"
+            path.write_bytes(b"\x89PNG\r\n\x1a\npng-bytes")
+            fake = FakeFilebinClient()
+            exporter = FakeAppleMusicArtworkExporter(path)
+            manager = ArtworkManager(
+                _settings(**{"artwork.apple_music.enabled": "false"}),
+                filebin_client=fake,
+                apple_catalog_client=FakeAppleCatalogClient(),
+                apple_music_artwork_exporter=exporter,
+            )
+
+            artwork = manager.resolve(_activity())
+
+            self.assertIsNone(artwork)
+            self.assertEqual(fake.uploads, [])
+            self.assertEqual(exporter.exports, [])
 
     def test_apple_catalog_can_be_used_explicitly(self) -> None:
         catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
@@ -93,16 +180,22 @@ class ArtworkManagerTests(unittest.TestCase):
         self.assertEqual(artwork.image_url, "https://is1-ssl.mzstatic.com/image.jpg")
 
     def test_apple_catalog_can_be_disabled(self) -> None:
+        fake = FakeFilebinClient()
         catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
+        exporter = FakeAppleMusicArtworkExporter()
         manager = ArtworkManager(
             _settings(**{"artwork.apple_catalog.enabled": "false"}),
+            filebin_client=fake,
             apple_catalog_client=catalog,
+            apple_music_artwork_exporter=exporter,
         )
 
         artwork = manager.resolve(_activity())
 
         self.assertIsNone(artwork)
+        self.assertEqual(fake.uploads, [])
         self.assertEqual(catalog.lookups, [])
+        self.assertEqual(len(exporter.exports), 1)
 
     def test_catalog_best_result_ignores_unmatched_results(self) -> None:
         result = _best_catalog_result(
