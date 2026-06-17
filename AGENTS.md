@@ -9,7 +9,7 @@ This file defines repository rules for human operators and AI coding agents work
 - Company: Clark & Burke LLC
 - Website: https://www.cnb.llc
 - Developer email: streetkings@cnb.llc
-- Current version: `0.9.2`
+- Current version: `1.0.0`
 
 ## Required Workflow
 

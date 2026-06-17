@@ -15,7 +15,41 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Update affected files in `docs/`.
 - Run tests.
 - Verify local install in a virtual environment.
+- Build wheel and source distribution artifacts.
+- Verify the built wheel installs in a clean virtual environment.
 - Commit and push the release changes.
+- Tag the release as `vX.Y.Z` and push the tag.
+
+## Artifact Policy
+
+The `1.0.0` release ships as source plus standard Python package artifacts:
+
+- Source checkout or GitHub source archive from the release tag.
+- Python wheel.
+- Python source distribution.
+
+Standalone macOS, Windows, or Linux app bundles are not part of `1.0.0`. Generated artifacts belong in `dist/` and are ignored by git.
+
+Build artifacts:
+
+```sh
+python -m pip install build
+python -m build
+```
+
+Verify the wheel in a clean virtual environment:
+
+```sh
+python3 -m venv /tmp/dmp-release-check
+/tmp/dmp-release-check/bin/python -m pip install dist/dis_music_presence-1.0.0-py3-none-any.whl
+/tmp/dmp-release-check/bin/dmp version
+```
+
+## 1.0.0 - 2026-06-17
+
+- Declared the first stable public release for Apple Music on macOS and Plex through Tautulli or direct Plex API.
+- Standardized release packaging around source checkout plus Python wheel and source distribution artifacts.
+- Confirmed generated release artifacts are not committed to the repository.
 
 ## 0.9.2 - 2026-06-16
 

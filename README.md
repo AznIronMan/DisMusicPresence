@@ -1,7 +1,7 @@
 # DisMusicPresence
 
-Version: `0.9.2`
-Last updated: `2026-06-16`
+Version: `1.0.0`
+Last updated: `2026-06-17`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
 
@@ -13,7 +13,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.9.2` is the current application build-out. It includes:
+`1.0.0` is the first stable public release. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
@@ -34,7 +34,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 - Startup guidance and editable macOS/Linux service templates for regular local use.
 - Unit tests using Python standard library `unittest`.
 
-Windows and Linux are not primary test targets yet. Plex support is platform-neutral. Apple Music on Windows is best-effort, untested, and unsupported until validated on a Windows machine with Apple Music installed.
+Windows and Linux are not primary test targets yet. Plex support is designed to be platform-neutral. Apple Music on Windows is best-effort, untested, and unsupported until validated on a Windows machine with Apple Music installed.
 
 ## Quick Start
 
@@ -67,7 +67,7 @@ This project started at `0.0.1`.
 - Minor changes: new sources, new formatting features, new configuration options, and other meaningful feature additions.
 - Major changes: broad rewrites, major user interface changes, incompatible configuration changes, or major application architecture changes.
 
-The first stable public release can be tagged as `1.0.0` once the core bridge behavior is complete enough for regular use.
+`1.0.0` is the first stable public release for the Apple Music and Plex bridge. Future media sources should use minor-version releases unless they require incompatible changes.
 
 ## Documentation
 
@@ -83,6 +83,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 1.0.0 - 2026-06-17
+
+- Declared the first stable public release for the Apple Music and Plex Discord presence bridge.
+- Standardized release packaging around source checkout plus Python wheel/sdist artifacts.
+- Verified tests, fresh editable install, package build, and built wheel install for the release.
 
 ### 0.9.2 - 2026-06-16
 
