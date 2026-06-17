@@ -6,7 +6,7 @@ The application polls enabled media sources, normalizes the current activity int
 
 Target presence examples include:
 
-- `Listening to ♪ Artist - Song`
+- `Listening to Artist - Song`
 - `Watching Movie Name`
 - `Watching Show Name - S01E02 - Episode Name`
 
@@ -33,7 +33,7 @@ Discord presence is updated only when the formatted text changes. When no enable
 
 The Discord integration requires a Discord application client ID. The app does not bundle or create that application for users.
 
-Optional artwork support can attach a large image asset to Discord Rich Presence. Artwork can come from current Apple Music artwork uploaded to Filebin, Apple/iTunes catalog lookup for Apple Music tracks, a public URL, or a local custom image uploaded to Filebin for temporary public hosting.
+Optional artwork support can attach a large image asset to Discord Rich Presence. Artwork can come from current Apple Music artwork uploaded to temporary hosting, Apple/iTunes catalog lookup for Apple Music tracks, a public URL, or a local custom image uploaded to temporary public hosting.
 
 ## Platform Status
 

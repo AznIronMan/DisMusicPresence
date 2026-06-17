@@ -54,7 +54,7 @@ format.watching_episode
 Default templates:
 
 ```text
-Listening to ♪ {artist} - {title}
+Listening to {artist} - {title}
 Watching {title}
 Watching {show_title} - {episode_code} - {episode_title}
 ```
@@ -91,10 +91,12 @@ Apple Music is supported on macOS only. The first time the app checks Apple Musi
 artwork.provider
 artwork.custom_url
 artwork.custom_text
+artwork.upload.path
 artwork.filebin.path
 artwork.filebin.base_url
 artwork.filebin.bin
 artwork.filebin.delete_on_shutdown
+artwork.tmpfiles.base_url
 artwork.apple_music.enabled
 artwork.apple_catalog.enabled
 artwork.apple_catalog.country
@@ -107,10 +109,11 @@ artwork.apple_catalog.size
 none
 custom_url
 apple_catalog
+tmpfiles
 filebin
 ```
 
-The default provider is `filebin`. If `artwork.filebin.path` points to a local image file, that image is uploaded to Filebin. If no local path is configured and `artwork.apple_music.enabled` is true, Apple Music tracks export the current Music.app artwork and upload it to Filebin. When local artwork is unavailable, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
+The default provider is `tmpfiles`. If `artwork.upload.path` points to a local image file, that image is uploaded to temporary hosting. If no local path is configured and `artwork.apple_music.enabled` is true, Apple Music tracks export the current Music.app artwork and upload it to temporary hosting. When local artwork is unavailable, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
 
 Use `custom_url` when you already have a public image URL:
 
@@ -120,18 +123,27 @@ dmp config set artwork.custom_url https://example.com/artwork.png
 dmp config set artwork.custom_text "Custom Artwork"
 ```
 
-Use `filebin` when you want DisMusicPresence to upload a local custom image to Filebin and use that temporary public URL in Discord:
+Use `tmpfiles` when you want DisMusicPresence to upload a local custom image to Tmpfiles and use that temporary public URL in Discord:
+
+```sh
+dmp config set artwork.provider tmpfiles
+dmp config set artwork.upload.path .private/artwork.png
+```
+
+Tmpfiles uploads are temporary public files and cannot be deleted by DisMusicPresence after upload.
+
+Use `filebin` only when you explicitly want Filebin hosting:
 
 ```sh
 dmp config set artwork.provider filebin
-dmp config set artwork.filebin.path .private/artwork.png
+dmp config set artwork.upload.path .private/artwork.png
 ```
 
-By default, Filebin uploads use `https://filebin.net`, a generated bin name, and cleanup on shutdown. If `artwork.filebin.bin` is empty, DisMusicPresence deletes the generated bin during cleanup. If you set a custom bin, DisMusicPresence deletes only the uploaded file so it does not remove unrelated files in the bin.
+Filebin uploads use `https://filebin.net`, a generated bin name, and cleanup on shutdown. If `artwork.filebin.bin` is empty, DisMusicPresence deletes the generated bin during cleanup. If you set a custom bin, DisMusicPresence deletes only the uploaded file so it does not remove unrelated files in the bin. Live Discord testing showed Filebin images may render as a question-mark placeholder in Discord, so `tmpfiles` is the recommended default.
 
-Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMusicPresence rejects Filebin uploads larger than 10 MB.
+Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMusicPresence rejects temporary uploads larger than 10 MB.
 
-Filebin artwork is public while active. Do not upload private, sensitive, or copyrighted images unless you are comfortable with that exposure.
+Temporary artwork is public while active. Do not upload private, sensitive, or copyrighted images unless you are comfortable with that exposure.
 
 Disable automatic current Apple Music artwork export:
 

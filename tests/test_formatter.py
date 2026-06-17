@@ -21,7 +21,7 @@ class FormatterTests(unittest.TestCase):
         presence = PresenceFormatter().format(activity)
 
         self.assertIsNotNone(presence)
-        self.assertEqual(presence.text, "Listening to \u266a Artist - Song")
+        self.assertEqual(presence.text, "Listening to Artist - Song")
         self.assertEqual(presence.activity_type, 2)
 
     def test_formats_episode_presence(self) -> None:

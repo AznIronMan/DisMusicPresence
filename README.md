@@ -1,11 +1,11 @@
 # DisMusicPresence
 
-Version: `0.4.0`
+Version: `0.5.0`
 Last updated: `2026-06-16`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
 
-- `Listening to ♪ Artist - Song`
+- `Listening to Artist - Song`
 - `Watching Movie Name`
 - `Watching Show Name - S01E02 - Episode Name`
 
@@ -13,7 +13,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.4.0` is the current application build-out. It includes:
+`0.5.0` is the current application build-out. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
@@ -21,8 +21,8 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 - Apple Music source provider for macOS.
 - Plex source provider through Tautulli or direct Plex server API fallback.
 - Discord local IPC integration with connect, update, clear, and diagnostic behavior.
-- Optional Discord artwork assets from a public custom URL, Filebin-uploaded local image, Filebin-uploaded current Apple Music artwork, or Apple/iTunes catalog lookup.
-- Automatic Apple Music artwork export through Music.app when Filebin is enabled and no local Filebin artwork path is configured.
+- Optional Discord artwork assets from a public custom URL, Tmpfiles-uploaded local image, Tmpfiles-uploaded current Apple Music artwork, Filebin, or Apple/iTunes catalog lookup.
+- Automatic Apple Music artwork export through Music.app when temporary artwork hosting is enabled and no local artwork path is configured.
 - Apple/iTunes catalog fallback when local Apple Music artwork export is unavailable.
 - Runtime loop with source priority, polling, dry-run mode, and shutdown cleanup.
 - Unit tests using Python standard library `unittest`.
@@ -73,6 +73,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.5.0 - 2026-06-16
+
+- Changed the default temporary artwork host to Tmpfiles after live Discord validation showed Filebin images can render as a question-mark placeholder.
+- Kept Filebin available as an optional artwork provider.
+- Removed the explicit music-note character from the default listening format because Discord already shows the listening icon.
 
 ### 0.4.0 - 2026-06-16
 

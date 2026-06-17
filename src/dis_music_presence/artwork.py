@@ -17,8 +17,9 @@ from .models import MediaActivity
 from .settings import Settings
 
 
-MAX_FILEBIN_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_ARTWORK_UPLOAD_BYTES = 10 * 1024 * 1024
 FILEBIN_TIMEOUT_SECONDS = 10
+TMPFILES_TIMEOUT_SECONDS = 10
 APPLE_CATALOG_TIMEOUT_SECONDS = 5
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 IMAGE_TYPE_SUFFIXES = {
@@ -81,17 +82,19 @@ class ArtworkManager:
         self,
         settings: Settings,
         filebin_client: FilebinClient | None = None,
+        tmpfiles_client: TmpfilesClient | None = None,
         apple_catalog_client: AppleCatalogClient | None = None,
         apple_music_artwork_exporter: AppleMusicArtworkExporter | None = None,
         allow_upload: bool = True,
     ) -> None:
         self.settings = settings
         self._filebin_client = filebin_client
+        self._tmpfiles_client = tmpfiles_client
         self._apple_catalog_client = apple_catalog_client
         self._apple_music_artwork_exporter = apple_music_artwork_exporter
         self.allow_upload = allow_upload
         self._uploaded: UploadedArtwork | None = None
-        self._uploaded_path: Path | None = None
+        self._uploaded_provider = ""
         self._uploaded_cache_key: tuple[str, str, str, str] | None = None
         self._catalog_cache: dict[tuple[str, str, str], ArtworkAsset | None] = {}
 
@@ -103,20 +106,25 @@ class ArtworkManager:
             return self._custom_url(activity)
         if provider == "apple_catalog":
             return self._apple_catalog(activity)
-        if provider == "filebin":
-            artwork = self._filebin(activity)
+        if provider == "tmpfiles":
+            artwork = self._temporary_upload(activity, provider)
             if artwork is not None:
                 return artwork
             return self._apple_catalog(activity)
-        raise ArtworkError("artwork.provider must be none, custom_url, apple_catalog, or filebin.")
+        if provider == "filebin":
+            artwork = self._temporary_upload(activity, provider)
+            if artwork is not None:
+                return artwork
+            return self._apple_catalog(activity)
+        raise ArtworkError("artwork.provider must be none, custom_url, apple_catalog, tmpfiles, or filebin.")
 
     def cleanup(self) -> None:
         if self._uploaded is None:
             return
-        if self.settings.bool("artwork.filebin.delete_on_shutdown", True):
-            self._client().delete(self._uploaded)
+        if self._uploaded_provider == "filebin" and self.settings.bool("artwork.filebin.delete_on_shutdown", True):
+            self._filebin_client_instance().delete(self._uploaded)
         self._uploaded = None
-        self._uploaded_path = None
+        self._uploaded_provider = ""
         self._uploaded_cache_key = None
 
     def _custom_url(self, activity: MediaActivity) -> ArtworkAsset | None:
@@ -126,19 +134,20 @@ class ArtworkManager:
         _validate_public_url(url)
         return ArtworkAsset(image_url=url, image_text=self._image_text(activity))
 
-    def _filebin(self, activity: MediaActivity) -> ArtworkAsset | None:
+    def _temporary_upload(self, activity: MediaActivity, provider: str) -> ArtworkAsset | None:
         if not self.allow_upload:
             return None
 
         activity_cache_key = _activity_cache_key(activity)
         if (
-            not self.settings.get("artwork.filebin.path").strip()
+            not self._configured_upload_path()
             and self._uploaded is not None
+            and self._uploaded_provider == provider
             and self._uploaded_cache_key == activity_cache_key
         ):
             return self._uploaded
 
-        candidate = self._filebin_candidate(activity, activity_cache_key)
+        candidate = self._artwork_file_candidate(activity, activity_cache_key)
         if candidate is None:
             return None
 
@@ -151,44 +160,55 @@ class ArtworkManager:
             if candidate.temporary:
                 path.unlink(missing_ok=True)
 
-        if len(file_bytes) > MAX_FILEBIN_UPLOAD_BYTES:
-            raise ArtworkError("Artwork file is too large for DisMusicPresence Filebin uploads.")
+        if len(file_bytes) > MAX_ARTWORK_UPLOAD_BYTES:
+            raise ArtworkError("Artwork file is too large for DisMusicPresence temporary uploads.")
 
         content_type = _content_type(path, file_bytes)
         if content_type not in SUPPORTED_IMAGE_TYPES:
             raise ArtworkError(f"Unsupported artwork image type: {content_type}")
 
         digest = hashlib.sha256(file_bytes).hexdigest()
-        if self._uploaded and self._uploaded.sha256 == digest:
+        if self._uploaded and self._uploaded_provider == provider and self._uploaded.sha256 == digest:
             self._uploaded_cache_key = candidate.cache_key
             return self._uploaded
 
         self.cleanup()
-        bin_name = self.settings.get("artwork.filebin.bin").strip()
-        delete_bin = not bin_name
-        if not bin_name:
-            bin_name = f"dmp-{uuid.uuid4().hex[:16]}"
         filename = _artwork_filename(path, digest, content_type)
-        uploaded = self._client().upload(
-            bin_name=bin_name,
-            filename=filename,
-            content=file_bytes,
-            content_type=content_type,
-            sha256=digest,
-            image_text=self._image_text(activity),
-            delete_bin=delete_bin,
-        )
+        if provider == "tmpfiles":
+            uploaded = self._tmpfiles_client_instance().upload(
+                filename=filename,
+                content=file_bytes,
+                content_type=content_type,
+                sha256=digest,
+                image_text=self._image_text(activity),
+            )
+        elif provider == "filebin":
+            bin_name = self.settings.get("artwork.filebin.bin").strip()
+            delete_bin = not bin_name
+            if not bin_name:
+                bin_name = f"dmp-{uuid.uuid4().hex[:16]}"
+            uploaded = self._filebin_client_instance().upload(
+                bin_name=bin_name,
+                filename=filename,
+                content=file_bytes,
+                content_type=content_type,
+                sha256=digest,
+                image_text=self._image_text(activity),
+                delete_bin=delete_bin,
+            )
+        else:
+            raise ArtworkError(f"Unsupported temporary artwork provider: {provider}")
         self._uploaded = uploaded
-        self._uploaded_path = None if candidate.temporary else path
+        self._uploaded_provider = provider
         self._uploaded_cache_key = candidate.cache_key
         return uploaded
 
-    def _filebin_candidate(
+    def _artwork_file_candidate(
         self,
         activity: MediaActivity,
         activity_cache_key: tuple[str, str, str, str],
     ) -> _ArtworkFile | None:
-        path_value = self.settings.get("artwork.filebin.path").strip()
+        path_value = self._configured_upload_path()
         if path_value:
             return _ArtworkFile(Path(path_value).expanduser().resolve())
 
@@ -231,10 +251,18 @@ class ArtworkManager:
             return f"{activity.album} - {activity.artist}"
         return activity.album or activity.title or activity.source
 
-    def _client(self) -> FilebinClient:
+    def _configured_upload_path(self) -> str:
+        return self.settings.get("artwork.upload.path").strip() or self.settings.get("artwork.filebin.path").strip()
+
+    def _filebin_client_instance(self) -> FilebinClient:
         if self._filebin_client is None:
             self._filebin_client = FilebinClient(self.settings.get("artwork.filebin.base_url"))
         return self._filebin_client
+
+    def _tmpfiles_client_instance(self) -> TmpfilesClient:
+        if self._tmpfiles_client is None:
+            self._tmpfiles_client = TmpfilesClient(self.settings.get("artwork.tmpfiles.base_url"))
+        return self._tmpfiles_client
 
     def _catalog_client(self) -> AppleCatalogClient:
         if self._apple_catalog_client is None:
@@ -291,7 +319,7 @@ class AppleCatalogClient:
     ) -> ArtworkAsset | None:
         query = _catalog_query(artist=artist, album=album, title=title, country=country)
         url = f"{self.base_url}?{urllib.parse.urlencode(query)}"
-        request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.4.0"})
+        request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.5.0"})
         try:
             with urllib.request.urlopen(request, timeout=APPLE_CATALOG_TIMEOUT_SECONDS) as response:
                 data = response.read()
@@ -344,7 +372,7 @@ class FilebinClient:
                 "Content-Type": content_type,
                 "Content-Length": str(len(content)),
                 "Content-SHA256": sha256,
-                "User-Agent": "DisMusicPresence/0.4.0",
+                "User-Agent": "DisMusicPresence/0.5.0",
             },
         )
         try:
@@ -375,7 +403,7 @@ class FilebinClient:
             url = self._bin_url(upload.bin_name)
         else:
             url = self._file_url(upload.bin_name, upload.filename)
-        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.4.0"})
+        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.5.0"})
         try:
             with urllib.request.urlopen(request, timeout=FILEBIN_TIMEOUT_SECONDS) as response:
                 status = getattr(response, "status", response.getcode())
@@ -406,10 +434,91 @@ class FilebinClient:
             raise ArtworkError("Filebin upload returned an unexpected response.")
 
 
+class TmpfilesClient:
+    def __init__(self, base_url: str = "https://tmpfiles.org") -> None:
+        self.base_url = base_url.rstrip("/")
+        _validate_public_url(self.base_url)
+
+    def upload(
+        self,
+        *,
+        filename: str,
+        content: bytes,
+        content_type: str,
+        sha256: str,
+        image_text: str,
+    ) -> UploadedArtwork:
+        boundary = f"dmp-{uuid.uuid4().hex}"
+        body = _multipart_body(boundary, filename=filename, content=content, content_type=content_type)
+        request = urllib.request.Request(
+            f"{self.base_url}/api/v1/upload",
+            data=body,
+            method="POST",
+            headers={
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Content-Length": str(len(body)),
+                "User-Agent": "DisMusicPresence/0.5.0",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=TMPFILES_TIMEOUT_SECONDS) as response:
+                response_body = response.read()
+                status = getattr(response, "status", response.getcode())
+        except urllib.error.HTTPError as exc:
+            message = exc.read().decode("utf-8", errors="replace").strip()
+            raise ArtworkError(f"Tmpfiles upload failed with HTTP {exc.code}: {message}") from exc
+        except urllib.error.URLError as exc:
+            raise ArtworkError(f"Tmpfiles upload failed: {exc.reason}") from exc
+
+        if status not in {200, 201}:
+            raise ArtworkError(f"Tmpfiles upload failed with HTTP {status}.")
+
+        image_url = _tmpfiles_image_url(response_body)
+        return UploadedArtwork(
+            image_url=image_url,
+            image_text=image_text,
+            filename=filename,
+            sha256=sha256,
+        )
+
+
 def _validate_public_url(url: str) -> None:
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ArtworkError(f"Invalid public artwork URL: {url}")
+
+
+def _multipart_body(boundary: str, *, filename: str, content: bytes, content_type: str) -> bytes:
+    header = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+        f"Content-Type: {content_type}\r\n\r\n"
+    ).encode("utf-8")
+    footer = f"\r\n--{boundary}--\r\n".encode("utf-8")
+    return header + content + footer
+
+
+def _tmpfiles_image_url(body: bytes) -> str:
+    try:
+        decoded = json.loads(body.decode("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ArtworkError(f"Tmpfiles returned invalid JSON: {exc}") from exc
+    if not isinstance(decoded, dict) or decoded.get("status") != "success":
+        raise ArtworkError("Tmpfiles upload returned an unexpected response.")
+    data = decoded.get("data")
+    url = data.get("url") if isinstance(data, dict) else None
+    if not isinstance(url, str) or not url:
+        raise ArtworkError("Tmpfiles upload response did not include a URL.")
+    return _tmpfiles_direct_url(url)
+
+
+def _tmpfiles_direct_url(url: str) -> str:
+    _validate_public_url(url)
+    parsed = urllib.parse.urlparse(url)
+    if parsed.netloc != "tmpfiles.org" or parsed.path.startswith("/dl/"):
+        return url
+    path = "/dl/" + parsed.path.lstrip("/")
+    return urllib.parse.urlunparse(parsed._replace(path=path))
 
 
 def _temporary_artwork_path() -> Path:

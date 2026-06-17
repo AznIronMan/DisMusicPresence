@@ -11,7 +11,7 @@ from dis_music_presence.models import FormattedPresence
 class DiscordIpcTests(unittest.TestCase):
     def test_listening_payload_uses_details_for_visible_status(self) -> None:
         presence = FormattedPresence(
-            text="Listening to \u266a Artist - Song",
+            text="Listening to Artist - Song",
             activity_type=2,
             source="Apple Music",
         )
@@ -19,8 +19,8 @@ class DiscordIpcTests(unittest.TestCase):
         payload = build_activity_payload(presence)
 
         self.assertEqual(payload["type"], 2)
-        self.assertEqual(payload["details"], "\u266a Artist - Song")
-        self.assertEqual(payload["name"], "\u266a Artist - Song")
+        self.assertEqual(payload["details"], "Artist - Song")
+        self.assertEqual(payload["name"], "Artist - Song")
         self.assertEqual(payload["status_display_type"], 2)
         self.assertEqual(payload["state"], "Apple Music")
 
@@ -46,7 +46,7 @@ class DiscordIpcTests(unittest.TestCase):
 
     def test_activity_payload_includes_artwork_assets(self) -> None:
         presence = FormattedPresence(
-            text="Listening to \u266a Artist - Song",
+            text="Listening to Artist - Song",
             activity_type=2,
             source="Apple Music",
             image_url="https://example.test/artwork.png",

@@ -17,6 +17,12 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.5.0 - 2026-06-16
+
+- Changed the default temporary artwork host to Tmpfiles after live Discord validation showed Filebin images can render as a question-mark placeholder.
+- Kept Filebin available as an optional artwork provider.
+- Removed the explicit music-note character from the default listening format because Discord already shows the listening icon.
+
 ## 0.4.0 - 2026-06-16
 
 - Added current Apple Music artwork export through Music.app for Filebin-backed Discord artwork.

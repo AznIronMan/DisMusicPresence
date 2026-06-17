@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from dis_music_presence.artwork import ArtworkAsset, ArtworkManager, UploadedArtwork
 from dis_music_presence.artwork import _best_catalog_result, _resize_apple_artwork_url
+from dis_music_presence.artwork import _tmpfiles_direct_url, _tmpfiles_image_url
 from dis_music_presence.models import ActivityKind, MediaActivity, MediaType
 from dis_music_presence.settings import DEFAULT_SETTINGS, Settings
 
@@ -48,6 +49,20 @@ class FakeFilebinClient:
         self.deletes.append(upload)
 
 
+class FakeTmpfilesClient:
+    def __init__(self) -> None:
+        self.uploads: list[dict[str, object]] = []
+
+    def upload(self, **kwargs: object) -> UploadedArtwork:
+        self.uploads.append(kwargs)
+        return UploadedArtwork(
+            image_url=f"https://tmpfiles.test/dl/{kwargs['filename']}",
+            image_text=str(kwargs["image_text"]),
+            filename=str(kwargs["filename"]),
+            sha256=str(kwargs["sha256"]),
+        )
+
+
 class FakeAppleCatalogClient:
     def __init__(self, result: ArtworkAsset | None = None) -> None:
         self.result = result
@@ -69,13 +84,13 @@ class FakeAppleMusicArtworkExporter:
 
 
 class ArtworkManagerTests(unittest.TestCase):
-    def test_filebin_default_does_nothing_without_artwork(self) -> None:
-        fake = FakeFilebinClient()
+    def test_tmpfiles_default_does_nothing_without_artwork(self) -> None:
+        tmpfiles = FakeTmpfilesClient()
         catalog = FakeAppleCatalogClient()
         exporter = FakeAppleMusicArtworkExporter()
         manager = ArtworkManager(
             _settings(),
-            filebin_client=fake,
+            tmpfiles_client=tmpfiles,
             apple_catalog_client=catalog,
             apple_music_artwork_exporter=exporter,
         )
@@ -83,45 +98,45 @@ class ArtworkManagerTests(unittest.TestCase):
         artwork = manager.resolve(_activity())
 
         self.assertIsNone(artwork)
-        self.assertEqual(fake.uploads, [])
+        self.assertEqual(tmpfiles.uploads, [])
         self.assertEqual(len(catalog.lookups), 1)
         self.assertEqual(len(exporter.exports), 1)
 
-    def test_filebin_default_uploads_current_apple_music_artwork(self) -> None:
+    def test_tmpfiles_default_uploads_current_apple_music_artwork(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "cover.img"
             path.write_bytes(b"\x89PNG\r\n\x1a\npng-bytes")
-            fake = FakeFilebinClient()
+            tmpfiles = FakeTmpfilesClient()
             catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
             exporter = FakeAppleMusicArtworkExporter(path)
             manager = ArtworkManager(
                 _settings(),
-                filebin_client=fake,
+                tmpfiles_client=tmpfiles,
                 apple_catalog_client=catalog,
                 apple_music_artwork_exporter=exporter,
             )
 
             artwork = manager.resolve(_activity())
 
-            self.assertEqual(len(fake.uploads), 1)
+            self.assertEqual(len(tmpfiles.uploads), 1)
             self.assertEqual(
                 artwork.image_url,
-                f"https://filebin.test/{fake.uploads[0]['bin_name']}/{fake.uploads[0]['filename']}",
+                f"https://tmpfiles.test/dl/{tmpfiles.uploads[0]['filename']}",
             )
-            self.assertEqual(fake.uploads[0]["content_type"], "image/png")
-            self.assertTrue(str(fake.uploads[0]["filename"]).endswith(".png"))
+            self.assertEqual(tmpfiles.uploads[0]["content_type"], "image/png")
+            self.assertTrue(str(tmpfiles.uploads[0]["filename"]).endswith(".png"))
             self.assertEqual(catalog.lookups, [])
             self.assertFalse(path.exists())
 
-    def test_filebin_default_reuses_current_apple_music_artwork_upload(self) -> None:
+    def test_tmpfiles_default_reuses_current_apple_music_artwork_upload(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "cover.img"
             path.write_bytes(b"\x89PNG\r\n\x1a\npng-bytes")
-            fake = FakeFilebinClient()
+            tmpfiles = FakeTmpfilesClient()
             exporter = FakeAppleMusicArtworkExporter(path)
             manager = ArtworkManager(
                 _settings(),
-                filebin_client=fake,
+                tmpfiles_client=tmpfiles,
                 apple_catalog_client=FakeAppleCatalogClient(),
                 apple_music_artwork_exporter=exporter,
             )
@@ -130,15 +145,15 @@ class ArtworkManagerTests(unittest.TestCase):
             second = manager.resolve(_activity())
 
             self.assertEqual(first, second)
-            self.assertEqual(len(fake.uploads), 1)
+            self.assertEqual(len(tmpfiles.uploads), 1)
             self.assertEqual(len(exporter.exports), 1)
 
-    def test_filebin_default_falls_back_to_apple_catalog(self) -> None:
-        fake = FakeFilebinClient()
+    def test_tmpfiles_default_falls_back_to_apple_catalog(self) -> None:
+        tmpfiles = FakeTmpfilesClient()
         catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
         manager = ArtworkManager(
             _settings(),
-            filebin_client=fake,
+            tmpfiles_client=tmpfiles,
             apple_catalog_client=catalog,
             apple_music_artwork_exporter=FakeAppleMusicArtworkExporter(),
         )
@@ -146,18 +161,18 @@ class ArtworkManagerTests(unittest.TestCase):
         artwork = manager.resolve(_activity())
 
         self.assertEqual(artwork.image_url, "https://is1-ssl.mzstatic.com/image.jpg")
-        self.assertEqual(fake.uploads, [])
+        self.assertEqual(tmpfiles.uploads, [])
         self.assertEqual(catalog.lookups[0]["title"], "Song")
 
     def test_current_apple_music_artwork_can_be_disabled(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "cover.img"
             path.write_bytes(b"\x89PNG\r\n\x1a\npng-bytes")
-            fake = FakeFilebinClient()
+            tmpfiles = FakeTmpfilesClient()
             exporter = FakeAppleMusicArtworkExporter(path)
             manager = ArtworkManager(
                 _settings(**{"artwork.apple_music.enabled": "false"}),
-                filebin_client=fake,
+                tmpfiles_client=tmpfiles,
                 apple_catalog_client=FakeAppleCatalogClient(),
                 apple_music_artwork_exporter=exporter,
             )
@@ -165,7 +180,7 @@ class ArtworkManagerTests(unittest.TestCase):
             artwork = manager.resolve(_activity())
 
             self.assertIsNone(artwork)
-            self.assertEqual(fake.uploads, [])
+            self.assertEqual(tmpfiles.uploads, [])
             self.assertEqual(exporter.exports, [])
 
     def test_apple_catalog_can_be_used_explicitly(self) -> None:
@@ -180,12 +195,12 @@ class ArtworkManagerTests(unittest.TestCase):
         self.assertEqual(artwork.image_url, "https://is1-ssl.mzstatic.com/image.jpg")
 
     def test_apple_catalog_can_be_disabled(self) -> None:
-        fake = FakeFilebinClient()
+        tmpfiles = FakeTmpfilesClient()
         catalog = FakeAppleCatalogClient(ArtworkAsset("https://is1-ssl.mzstatic.com/image.jpg", "Album - Artist"))
         exporter = FakeAppleMusicArtworkExporter()
         manager = ArtworkManager(
             _settings(**{"artwork.apple_catalog.enabled": "false"}),
-            filebin_client=fake,
+            tmpfiles_client=tmpfiles,
             apple_catalog_client=catalog,
             apple_music_artwork_exporter=exporter,
         )
@@ -193,9 +208,19 @@ class ArtworkManagerTests(unittest.TestCase):
         artwork = manager.resolve(_activity())
 
         self.assertIsNone(artwork)
-        self.assertEqual(fake.uploads, [])
+        self.assertEqual(tmpfiles.uploads, [])
         self.assertEqual(catalog.lookups, [])
         self.assertEqual(len(exporter.exports), 1)
+
+    def test_tmpfiles_upload_response_uses_direct_download_url(self) -> None:
+        url = _tmpfiles_image_url(b'{"status":"success","data":{"url":"https://tmpfiles.org/abc/cover.png"}}')
+
+        self.assertEqual(url, "https://tmpfiles.org/dl/abc/cover.png")
+
+    def test_tmpfiles_direct_url_leaves_other_hosts_alone(self) -> None:
+        url = _tmpfiles_direct_url("https://example.test/abc/cover.png")
+
+        self.assertEqual(url, "https://example.test/abc/cover.png")
 
     def test_catalog_best_result_ignores_unmatched_results(self) -> None:
         result = _best_catalog_result(
