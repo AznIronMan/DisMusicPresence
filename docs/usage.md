@@ -12,6 +12,12 @@ Set the Discord application client ID:
 dmp config set discord.client_id YOUR_DISCORD_APPLICATION_CLIENT_ID
 ```
 
+Open the guided setup menu:
+
+```sh
+dmp setup
+```
+
 ## Check Diagnostics
 
 ```sh
@@ -20,12 +26,42 @@ dmp diagnostics
 
 Diagnostics report whether settings exist, Discord IPC is available, and each source is configured, disabled, unsupported, or unavailable. Secrets are not printed.
 
+## Check Status
+
+```sh
+dmp status
+```
+
+Status reports the app version, settings path, Discord availability, configured source priority, each provider's current activity, and the source that would win without publishing an update to Discord.
+
 ## Probe Sources
 
 Poll enabled sources once without updating Discord:
 
 ```sh
 dmp probe
+```
+
+## Set Source Priority
+
+When more than one source is active, the first active source in `app.source_priority` wins.
+
+Show the current order:
+
+```sh
+dmp priority
+```
+
+Make Plex win over Apple Music:
+
+```sh
+dmp priority set plex,apple_music
+```
+
+Make Apple Music win over Plex:
+
+```sh
+dmp priority set apple_music,plex
 ```
 
 ## Run The Bridge

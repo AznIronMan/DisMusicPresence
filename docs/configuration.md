@@ -8,6 +8,12 @@ Create it with:
 dmp config init
 ```
 
+For guided setup, run:
+
+```sh
+dmp setup
+```
+
 Show current settings with secrets redacted:
 
 ```sh
@@ -42,6 +48,20 @@ Default source priority is:
 ```text
 apple_music,plex
 ```
+
+The first active source in the list wins. With the default priority, Apple Music updates Discord when Apple Music and Plex are both playing. Put Plex first when Plex should win:
+
+```sh
+dmp priority set plex,apple_music
+```
+
+Show the current priority:
+
+```sh
+dmp priority show
+```
+
+`dmp priority set plex` is accepted as shorthand and appends any omitted known sources after Plex.
 
 ## Formatting Settings
 
@@ -210,7 +230,7 @@ Use `auto` to prefer Tautulli when configured and fall back to direct Plex serve
 
 Configure either `plex.user_names` or `plex.user_id` so the app selects the right user's playback session. This prevents another Plex user's activity from being published.
 
-`plex.user_names` is a comma- or pipe-separated list of names that may identify the same Plex user in different APIs. For example, a Plex account name may be `AznIronMan` while Tautulli displays the active session as `Geoff`; configure both:
+`plex.user_names` is a comma- or pipe-separated list of aliases that may identify the same Plex user in different APIs. Include the Plex account name and any Tautulli display names that appear in activity. For example, a Plex account name may be `AznIronMan` while Tautulli displays the active session as `Geoff`; configure both:
 
 ```sh
 dmp config set plex.user_names AznIronMan,Geoff

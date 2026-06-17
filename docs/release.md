@@ -17,6 +17,12 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.9.0 - 2026-06-16
+
+- Added source priority commands for showing and setting active-source precedence.
+- Added a status command that reports priority order and the current winning source without updating Discord.
+- Added an interactive setup command for common Discord, source priority, Apple Music, Plex, and artwork settings.
+
 ## 0.8.0 - 2026-06-16
 
 - Added Plex artwork resolution for active Plex playback.

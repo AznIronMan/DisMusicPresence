@@ -1,6 +1,6 @@
 # DisMusicPresence
 
-Version: `0.8.0`
+Version: `0.9.0`
 Last updated: `2026-06-16`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
@@ -13,10 +13,13 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.8.0` is the current application build-out. It includes:
+`0.9.0` is the current application build-out. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
+- Interactive setup menu for common Discord, source priority, Apple Music, Plex, and artwork settings.
+- Source priority controls for deciding whether Apple Music or Plex wins when both are active.
+- Status command showing current source priority and the active source that would update Discord.
 - Configurable listening and watching format templates.
 - Apple Music source provider for macOS.
 - Best-effort Apple Music source provider for Windows through Windows media sessions.
@@ -39,6 +42,7 @@ source .venv/bin/activate
 python -m pip install -e .
 dmp config init
 dmp config set discord.client_id YOUR_DISCORD_APPLICATION_CLIENT_ID
+dmp setup
 dmp diagnostics
 dmp run
 ```
@@ -76,6 +80,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.9.0 - 2026-06-16
+
+- Added `dmp priority` commands for showing and setting source precedence.
+- Added `dmp status` to show Discord availability, source priority, provider activity, and the current winning source.
+- Added `dmp setup` as an interactive standard-library setup menu for common Discord, source, Plex, and artwork settings.
 
 ### 0.8.0 - 2026-06-16
 

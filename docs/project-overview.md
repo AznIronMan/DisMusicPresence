@@ -28,6 +28,8 @@ Default priority:
 apple_music,plex
 ```
 
+Use `dmp priority set plex,apple_music` when Plex should take precedence over Apple Music. Use `dmp status` to see the current order and the active source that would win before publishing to Discord.
+
 ## Discord Output
 
 Discord presence is updated only when the formatted text changes. When no enabled source has active playback, the app clears the previous presence.
