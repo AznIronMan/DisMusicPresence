@@ -20,6 +20,9 @@ class SourceProvider:
     def poll(self) -> MediaActivity:
         raise NotImplementedError
 
+    def diagnostics(self) -> list[str]:
+        return []
+
     def capability(self) -> SourceCapability:
         return SourceCapability(
             name=self.name,

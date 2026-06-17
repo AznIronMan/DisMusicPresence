@@ -1,6 +1,6 @@
 # DisMusicPresence
 
-Version: `0.6.0`
+Version: `0.8.0`
 Last updated: `2026-06-16`
 
 DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
@@ -13,7 +13,7 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`0.6.0` is the current application build-out. It includes:
+`0.8.0` is the current application build-out. It includes:
 
 - Python CLI package with `dmp` command.
 - Local settings file named `dmp.settings`.
@@ -21,8 +21,9 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 - Apple Music source provider for macOS.
 - Best-effort Apple Music source provider for Windows through Windows media sessions.
 - Plex source provider through Tautulli or direct Plex server API fallback.
+- Plex diagnostics with backend reachability and configured-user session counts.
 - Discord local IPC integration with connect, update, clear, and diagnostic behavior.
-- Optional Discord artwork assets from a public custom URL, Tmpfiles-uploaded local image, Tmpfiles-uploaded current Apple Music artwork, Filebin, or Apple/iTunes catalog lookup.
+- Optional Discord artwork assets from a public custom URL, Tmpfiles-uploaded local image, Tmpfiles-uploaded current Apple Music artwork, Tmpfiles-uploaded Plex artwork, Filebin, or Apple/iTunes catalog lookup.
 - Automatic Apple Music artwork export through Music.app when temporary artwork hosting is enabled and no local artwork path is configured.
 - Apple/iTunes catalog fallback when local Apple Music artwork export is unavailable.
 - Runtime loop with source priority, polling, dry-run mode, and shutdown cleanup.
@@ -75,6 +76,18 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 0.8.0 - 2026-06-16
+
+- Added Plex artwork resolution for active Plex playback.
+- Added Tautulli image proxy fetching for Plex posters and uploaded those images through the temporary artwork host for Discord.
+- Added Plex artwork settings for enablement, preferred image fields, output size, and image format.
+
+### 0.7.0 - 2026-06-16
+
+- Added Plex diagnostics detail for Tautulli and direct Plex API backends.
+- Added configured-user session counts and active playback counts to diagnostics.
+- Updated Plex setup documentation for troubleshooting and validation.
 
 ### 0.6.0 - 2026-06-16
 

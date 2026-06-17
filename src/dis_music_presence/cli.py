@@ -117,6 +117,8 @@ def _cmd_diagnostics(args: argparse.Namespace) -> int:
         cap = provider.capability()
         source_state = _source_state(cap.enabled, cap.supported, cap.configured)
         print(f"{cap.name}: {source_state} - {cap.message}")
+        for line in provider.diagnostics():
+            print(f"  {line}")
     return 0
 
 

@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from dis_music_presence.artwork import ArtworkAsset, ArtworkManager, UploadedArtwork
 from dis_music_presence.artwork import _best_catalog_result, _resize_apple_artwork_url
+from dis_music_presence.artwork import _plex_image_path
 from dis_music_presence.artwork import _tmpfiles_direct_url, _tmpfiles_image_url
 from dis_music_presence.models import ActivityKind, MediaActivity, MediaType
 from dis_music_presence.settings import DEFAULT_SETTINGS, Settings
@@ -83,6 +84,27 @@ class FakeAppleMusicArtworkExporter:
         return self.path
 
 
+class FakePlexArtworkFetcher:
+    def __init__(self, path: Path | None = None) -> None:
+        self.path = path
+        self.exports: list[dict[str, object]] = []
+
+    def export(self, activity: MediaActivity, settings: Settings) -> Path | None:
+        self.exports.append({"activity": activity, "settings": settings})
+        return self.path
+
+
+def _plex_activity() -> MediaActivity:
+    return MediaActivity(
+        kind=ActivityKind.WATCHING,
+        source="Plex",
+        media_type=MediaType.MOVIE,
+        title="Movie",
+        player_state="playing",
+        raw={"thumb": "/library/metadata/1/thumb/2", "art": "/library/metadata/1/art/2"},
+    )
+
+
 class ArtworkManagerTests(unittest.TestCase):
     def test_tmpfiles_default_does_nothing_without_artwork(self) -> None:
         tmpfiles = FakeTmpfilesClient()
@@ -126,6 +148,29 @@ class ArtworkManagerTests(unittest.TestCase):
             self.assertEqual(tmpfiles.uploads[0]["content_type"], "image/png")
             self.assertTrue(str(tmpfiles.uploads[0]["filename"]).endswith(".png"))
             self.assertEqual(catalog.lookups, [])
+            self.assertFalse(path.exists())
+
+    def test_tmpfiles_default_uploads_plex_artwork(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "poster.img"
+            path.write_bytes(b"\xff\xd8\xffjpeg-bytes")
+            tmpfiles = FakeTmpfilesClient()
+            plex = FakePlexArtworkFetcher(path)
+            manager = ArtworkManager(
+                _settings(),
+                tmpfiles_client=tmpfiles,
+                apple_catalog_client=FakeAppleCatalogClient(),
+                apple_music_artwork_exporter=FakeAppleMusicArtworkExporter(),
+                plex_artwork_fetcher=plex,
+            )
+
+            artwork = manager.resolve(_plex_activity())
+
+            self.assertEqual(len(tmpfiles.uploads), 1)
+            self.assertEqual(artwork.image_url, f"https://tmpfiles.test/dl/{tmpfiles.uploads[0]['filename']}")
+            self.assertEqual(tmpfiles.uploads[0]["content_type"], "image/jpeg")
+            self.assertTrue(str(tmpfiles.uploads[0]["filename"]).endswith(".jpg"))
+            self.assertEqual(len(plex.exports), 1)
             self.assertFalse(path.exists())
 
     def test_tmpfiles_default_reuses_current_apple_music_artwork_upload(self) -> None:
@@ -221,6 +266,16 @@ class ArtworkManagerTests(unittest.TestCase):
         url = _tmpfiles_direct_url("https://example.test/abc/cover.png")
 
         self.assertEqual(url, "https://example.test/abc/cover.png")
+
+    def test_plex_image_path_uses_configured_field_order(self) -> None:
+        activity = MediaActivity(
+            kind=ActivityKind.WATCHING,
+            source="Plex",
+            media_type=MediaType.EPISODE,
+            raw={"thumb": "/episode-thumb", "grandparent_thumb": "/show-poster"},
+        )
+
+        self.assertEqual(_plex_image_path(activity, ["grandparent_thumb", "thumb"]), "/show-poster")
 
     def test_catalog_best_result_ignores_unmatched_results(self) -> None:
         result = _best_catalog_result(

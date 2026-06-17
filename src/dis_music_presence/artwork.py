@@ -21,6 +21,7 @@ MAX_ARTWORK_UPLOAD_BYTES = 10 * 1024 * 1024
 FILEBIN_TIMEOUT_SECONDS = 10
 TMPFILES_TIMEOUT_SECONDS = 10
 APPLE_CATALOG_TIMEOUT_SECONDS = 5
+PLEX_ARTWORK_TIMEOUT_SECONDS = 10
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 IMAGE_TYPE_SUFFIXES = {
     "image/jpeg": ".jpg",
@@ -85,6 +86,7 @@ class ArtworkManager:
         tmpfiles_client: TmpfilesClient | None = None,
         apple_catalog_client: AppleCatalogClient | None = None,
         apple_music_artwork_exporter: AppleMusicArtworkExporter | None = None,
+        plex_artwork_fetcher: PlexArtworkFetcher | None = None,
         allow_upload: bool = True,
     ) -> None:
         self.settings = settings
@@ -92,6 +94,7 @@ class ArtworkManager:
         self._tmpfiles_client = tmpfiles_client
         self._apple_catalog_client = apple_catalog_client
         self._apple_music_artwork_exporter = apple_music_artwork_exporter
+        self._plex_artwork_fetcher = plex_artwork_fetcher
         self.allow_upload = allow_upload
         self._uploaded: UploadedArtwork | None = None
         self._uploaded_provider = ""
@@ -213,11 +216,14 @@ class ArtworkManager:
             return _ArtworkFile(Path(path_value).expanduser().resolve())
 
         if not self.settings.bool("artwork.apple_music.enabled", True):
-            return None
-        exported = self._apple_music_exporter().export(
-            activity,
-            timeout_seconds=self.settings.int("apple_music.timeout_seconds", 10),
-        )
+            exported = None
+        else:
+            exported = self._apple_music_exporter().export(
+                activity,
+                timeout_seconds=self.settings.int("apple_music.timeout_seconds", 10),
+            )
+        if exported is None and self.settings.bool("artwork.plex.enabled", True):
+            exported = self._plex_artwork_fetcher_instance().export(activity, self.settings)
         if exported is None:
             return None
         return _ArtworkFile(exported, temporary=True, cache_key=activity_cache_key)
@@ -274,6 +280,11 @@ class ArtworkManager:
             self._apple_music_artwork_exporter = AppleMusicArtworkExporter()
         return self._apple_music_artwork_exporter
 
+    def _plex_artwork_fetcher_instance(self) -> PlexArtworkFetcher:
+        if self._plex_artwork_fetcher is None:
+            self._plex_artwork_fetcher = PlexArtworkFetcher()
+        return self._plex_artwork_fetcher
+
 
 class AppleMusicArtworkExporter:
     def export(self, activity: MediaActivity, timeout_seconds: int) -> Path | None:
@@ -302,6 +313,46 @@ class AppleMusicArtworkExporter:
         return output_path
 
 
+class PlexArtworkFetcher:
+    def export(self, activity: MediaActivity, settings: Settings) -> Path | None:
+        image_path = _plex_image_path(activity, settings.list("artwork.plex.image_fields", []))
+        if not image_path:
+            return None
+
+        output_path = _temporary_artwork_path()
+        try:
+            if settings.get("tautulli.url") and settings.get("tautulli.api_key"):
+                content = self._fetch_tautulli_image(image_path, settings)
+            elif settings.get("plex.url") and settings.get("plex.token"):
+                content = self._fetch_plex_image(image_path, settings)
+            else:
+                return None
+            if not content:
+                return None
+            output_path.write_bytes(content)
+            return output_path
+        except (OSError, urllib.error.URLError, TimeoutError):
+            output_path.unlink(missing_ok=True)
+            return None
+
+    def _fetch_tautulli_image(self, image_path: str, settings: Settings) -> bytes:
+        query = {
+            "apikey": settings.get("tautulli.api_key"),
+            "cmd": "pms_image_proxy",
+            "img": image_path,
+            "width": str(settings.int("artwork.plex.width", 600)),
+            "height": str(settings.int("artwork.plex.height", 900)),
+            "img_format": settings.get("artwork.plex.format", "jpg") or "jpg",
+        }
+        url = _build_url(settings.get("tautulli.url"), "/api/v2", query)
+        return _fetch_bytes(url, timeout=PLEX_ARTWORK_TIMEOUT_SECONDS)
+
+    def _fetch_plex_image(self, image_path: str, settings: Settings) -> bytes:
+        query = {"X-Plex-Token": settings.get("plex.token")}
+        url = _build_url(settings.get("plex.url"), image_path, query)
+        return _fetch_bytes(url, timeout=PLEX_ARTWORK_TIMEOUT_SECONDS)
+
+
 class AppleCatalogClient:
     def __init__(self, base_url: str = "https://itunes.apple.com/search") -> None:
         self.base_url = base_url
@@ -319,7 +370,7 @@ class AppleCatalogClient:
     ) -> ArtworkAsset | None:
         query = _catalog_query(artist=artist, album=album, title=title, country=country)
         url = f"{self.base_url}?{urllib.parse.urlencode(query)}"
-        request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.6.0"})
+        request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.8.0"})
         try:
             with urllib.request.urlopen(request, timeout=APPLE_CATALOG_TIMEOUT_SECONDS) as response:
                 data = response.read()
@@ -372,7 +423,7 @@ class FilebinClient:
                 "Content-Type": content_type,
                 "Content-Length": str(len(content)),
                 "Content-SHA256": sha256,
-                "User-Agent": "DisMusicPresence/0.6.0",
+                "User-Agent": "DisMusicPresence/0.8.0",
             },
         )
         try:
@@ -403,7 +454,7 @@ class FilebinClient:
             url = self._bin_url(upload.bin_name)
         else:
             url = self._file_url(upload.bin_name, upload.filename)
-        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.6.0"})
+        request = urllib.request.Request(url, method="DELETE", headers={"User-Agent": "DisMusicPresence/0.8.0"})
         try:
             with urllib.request.urlopen(request, timeout=FILEBIN_TIMEOUT_SECONDS) as response:
                 status = getattr(response, "status", response.getcode())
@@ -457,7 +508,7 @@ class TmpfilesClient:
             headers={
                 "Content-Type": f"multipart/form-data; boundary={boundary}",
                 "Content-Length": str(len(body)),
-                "User-Agent": "DisMusicPresence/0.6.0",
+                "User-Agent": "DisMusicPresence/0.8.0",
             },
         )
         try:
@@ -486,6 +537,21 @@ def _validate_public_url(url: str) -> None:
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ArtworkError(f"Invalid public artwork URL: {url}")
+
+
+def _build_url(base_url: str, path: str, query: dict[str, str]) -> str:
+    base = base_url.rstrip("/")
+    parsed = urllib.parse.urlparse(base)
+    if not parsed.scheme or not parsed.netloc:
+        raise ArtworkError(f"Invalid URL: {base_url}")
+    encoded = urllib.parse.urlencode(query)
+    return f"{base}{path}?{encoded}"
+
+
+def _fetch_bytes(url: str, timeout: int) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.8.0"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read()
 
 
 def _multipart_body(boundary: str, *, filename: str, content: bytes, content_type: str) -> bytes:
@@ -561,6 +627,17 @@ def _activity_cache_key(activity: MediaActivity) -> tuple[str, str, str, str]:
         activity.album.casefold(),
         activity.title.casefold(),
     )
+
+
+def _plex_image_path(activity: MediaActivity, configured_fields: list[str]) -> str:
+    if activity.source != "Plex" or not isinstance(activity.raw, dict):
+        return ""
+    fields = configured_fields or ["thumb", "grandparent_thumb", "parent_thumb", "art"]
+    for field in fields:
+        value = activity.raw.get(field)
+        if isinstance(value, str) and value.startswith("/"):
+            return value
+    return ""
 
 
 def _catalog_query(*, artist: str, album: str, title: str, country: str) -> dict[str, str]:

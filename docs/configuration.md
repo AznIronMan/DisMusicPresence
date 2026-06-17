@@ -103,6 +103,11 @@ artwork.filebin.bin
 artwork.filebin.delete_on_shutdown
 artwork.tmpfiles.base_url
 artwork.apple_music.enabled
+artwork.plex.enabled
+artwork.plex.image_fields
+artwork.plex.width
+artwork.plex.height
+artwork.plex.format
 artwork.apple_catalog.enabled
 artwork.apple_catalog.country
 artwork.apple_catalog.size
@@ -118,7 +123,7 @@ tmpfiles
 filebin
 ```
 
-The default provider is `tmpfiles`. If `artwork.upload.path` points to a local image file, that image is uploaded to temporary hosting. If no local path is configured and `artwork.apple_music.enabled` is true, Apple Music tracks export the current Music.app artwork and upload it to temporary hosting. When local artwork is unavailable, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
+The default provider is `tmpfiles`. If `artwork.upload.path` points to a local image file, that image is uploaded to temporary hosting. If no local path is configured and `artwork.apple_music.enabled` is true, Apple Music tracks export the current Music.app artwork and upload it to temporary hosting. If no local path is configured and `artwork.plex.enabled` is true, Plex sessions use item artwork from Tautulli or the direct Plex API and upload it to temporary hosting. When local artwork is unavailable, Apple Music tracks fall back to Apple/iTunes catalog artwork if `artwork.apple_catalog.enabled` is true.
 
 Use `custom_url` when you already have a public image URL:
 
@@ -154,6 +159,16 @@ Disable automatic current Apple Music artwork export:
 
 ```sh
 dmp config set artwork.apple_music.enabled false
+```
+
+Plex artwork defaults to the item poster/thumb first, then parent/show artwork, then background art:
+
+```sh
+dmp config set artwork.plex.enabled true
+dmp config set artwork.plex.image_fields thumb,grandparent_thumb,parent_thumb,art
+dmp config set artwork.plex.width 600
+dmp config set artwork.plex.height 900
+dmp config set artwork.plex.format jpg
 ```
 
 Use `apple_catalog` when you want only Apple/iTunes catalog artwork and no Filebin fallback:
@@ -222,3 +237,11 @@ dmp config set plex.user_names YOUR_PLEX_NAME
 dmp config set plex.url http://YOUR_PLEX_HOST:32400
 dmp config set plex.token YOUR_PLEX_TOKEN
 ```
+
+Run diagnostics after configuring Plex:
+
+```sh
+dmp diagnostics
+```
+
+Plex diagnostics report the selected provider, configured user filter, Tautulli reachability, direct Plex API reachability, total sessions, sessions matching the configured user, and matching sessions that are actively playing.

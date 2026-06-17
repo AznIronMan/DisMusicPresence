@@ -17,6 +17,18 @@ DisMusicPresence uses `major.minor.patch` versioning.
 - Verify local install in a virtual environment.
 - Commit and push the release changes.
 
+## 0.8.0 - 2026-06-16
+
+- Added Plex artwork resolution for active Plex playback.
+- Added Tautulli image proxy fetching for Plex posters and uploaded those images through the temporary artwork host for Discord.
+- Added Plex artwork settings for enablement, preferred image fields, output size, and image format.
+
+## 0.7.0 - 2026-06-16
+
+- Added Plex diagnostics detail for Tautulli and direct Plex API backends.
+- Added configured-user session counts and active playback counts to diagnostics.
+- Updated Plex setup documentation for troubleshooting and validation.
+
 ## 0.6.0 - 2026-06-16
 
 - Added best-effort Apple Music for Windows detection through Windows media sessions.

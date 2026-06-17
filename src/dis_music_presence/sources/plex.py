@@ -15,6 +15,7 @@ from .base import SourceCapability, SourceProvider
 
 
 TIMEOUT_SECONDS = 6
+USER_AGENT = "DisMusicPresence/0.8.0"
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,31 @@ class PlexProvider(SourceProvider):
         if provider == "auto" and not (has_tautulli or has_plex):
             return SourceCapability(self.name, enabled, True, False, "Configure Tautulli or direct Plex API settings.")
         return SourceCapability(self.name, enabled, True, True, "Plex source is configured.")
+
+    def diagnostics(self) -> list[str]:
+        capability = self.capability()
+        if not capability.enabled:
+            return []
+
+        provider = self._provider_mode()
+        lines = [f"provider={provider}; user_filter={self._user_filter_label()}"]
+        if not capability.configured:
+            lines.append(f"configuration: {capability.message}")
+            return lines
+
+        if provider in {"auto", "tautulli"}:
+            if self._tautulli_configured():
+                lines.append(self._diagnose_tautulli())
+            else:
+                lines.append("tautulli: unconfigured")
+
+        if provider in {"auto", "plex"}:
+            if self._plex_configured():
+                lines.append(self._diagnose_plex())
+            else:
+                lines.append("plex_api: unconfigured")
+
+        return lines
 
     def poll(self) -> MediaActivity:
         capability = self.capability()
@@ -111,6 +137,43 @@ class PlexProvider(SourceProvider):
 
         return _BackendResult(self._activity_from_plex_videos(root.findall(".//Video")))
 
+    def _diagnose_tautulli(self) -> str:
+        base_url = self.settings.get("tautulli.url")
+        api_key = self.settings.get("tautulli.api_key")
+        try:
+            payload = _http_json(base_url, {"apikey": api_key, "cmd": "get_activity"})
+        except RuntimeError as exc:
+            return f"tautulli: unavailable - {exc}"
+
+        response = payload.get("response", {})
+        if response.get("result") != "success":
+            message = str(response.get("message") or "API returned an error.")
+            return f"tautulli: error - {message}"
+
+        data = response.get("data", {})
+        sessions = data.get("sessions") or []
+        if not isinstance(sessions, list):
+            return "tautulli: error - activity response did not include a session list"
+
+        total, matching, playing = self._tautulli_session_counts(sessions)
+        return f"tautulli: reachable - sessions={total}, matching_user={matching}, playing={playing}"
+
+    def _diagnose_plex(self) -> str:
+        base_url = self.settings.get("plex.url")
+        token = self.settings.get("plex.token")
+        try:
+            xml_data = _http_bytes(base_url, "/status/sessions", {"X-Plex-Token": token})
+        except RuntimeError as exc:
+            return f"plex_api: unavailable - {exc}"
+
+        try:
+            root = ET.fromstring(xml_data)
+        except ET.ParseError as exc:
+            return f"plex_api: error - invalid XML: {exc}"
+
+        total, matching, playing = self._plex_video_counts(root.findall(".//Video"))
+        return f"plex_api: reachable - sessions={total}, matching_user={matching}, playing={playing}"
+
     def _activity_from_tautulli_sessions(self, sessions: list[dict[str, Any]]) -> MediaActivity:
         matching = [session for session in sessions if self._session_matches_user(session)]
         if not matching:
@@ -171,6 +234,7 @@ class PlexProvider(SourceProvider):
                 media_type=MediaType.MOVIE,
                 title=video.get("title") or "",
                 player_state="playing",
+                raw=_plex_video_raw(video),
             )
         if media_type == "episode":
             return MediaActivity(
@@ -183,6 +247,7 @@ class PlexProvider(SourceProvider):
                 episode=_optional_int(video.get("index")),
                 episode_title=video.get("title") or "",
                 player_state="playing",
+                raw=_plex_video_raw(video),
             )
         return MediaActivity.idle(self.name, f"Unsupported Plex media type: {media_type or 'unknown'}.")
 
@@ -214,6 +279,31 @@ class PlexProvider(SourceProvider):
         if expected_names and title.casefold() in expected_names:
             return True
         return False
+
+    def _tautulli_session_counts(self, sessions: list[dict[str, Any]]) -> tuple[int, int, int]:
+        matching = [session for session in sessions if self._session_matches_user(session)]
+        playing = [session for session in matching if str(session.get("state", "")).lower() == "playing"]
+        return len(sessions), len(matching), len(playing)
+
+    def _plex_video_counts(self, videos: list[ET.Element]) -> tuple[int, int, int]:
+        matching = [video for video in videos if self._plex_video_matches_user(video)]
+        playing = []
+        for video in matching:
+            player = video.find("Player")
+            state = (player.get("state") if player is not None else "") or ""
+            if state.lower() == "playing":
+                playing.append(video)
+        return len(videos), len(matching), len(playing)
+
+    def _user_filter_label(self) -> str:
+        names = sorted(self._expected_user_names())
+        user_id = self.settings.get("plex.user_id")
+        labels = []
+        if names:
+            labels.append("names=" + ",".join(names))
+        if user_id:
+            labels.append("user_id=<configured>")
+        return ";".join(labels) if labels else "none"
 
     def _expected_user_names(self) -> set[str]:
         names: set[str] = set()
@@ -249,7 +339,7 @@ def _http_json(base_url: str, query: dict[str, str]) -> dict[str, Any]:
 
 def _http_bytes(base_url: str, path: str, query: dict[str, str]) -> bytes:
     url = _build_url(base_url, path, query)
-    request = urllib.request.Request(url, headers={"User-Agent": "DisMusicPresence/0.1.1"})
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             return response.read()
@@ -277,3 +367,13 @@ def _optional_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _plex_video_raw(video: ET.Element) -> dict[str, Any]:
+    return {
+        "thumb": video.get("thumb") or "",
+        "art": video.get("art") or "",
+        "grandparent_thumb": video.get("grandparentThumb") or "",
+        "parent_thumb": video.get("parentThumb") or "",
+        "rating_key": video.get("ratingKey") or video.get("rating_key") or "",
+    }
