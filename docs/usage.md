@@ -84,7 +84,9 @@ dmp run --dry-run
 
 For regular startup at login, see [Startup](startup.md).
 
-Discord may still show the registered application name as the Rich Presence app label. DisMusicPresence sends the formatted media text as the activity details and asks Discord to use details for the visible status text where supported. Long media text is shortened before sending because Discord limits Rich Presence text fields.
+Discord may still show the registered application name as the Rich Presence app label. DisMediaPresence sends the formatted media text as the activity details and asks Discord to use details for the visible status text where supported. Long media text is shortened before sending because Discord limits Rich Presence text fields.
+
+For production use, rename the Discord Developer Portal application to DisMediaPresence so Discord's application label matches the project rebrand.
 
 ## Artwork
 
@@ -104,7 +106,7 @@ dmp config set artwork.provider tmpfiles
 dmp config set artwork.upload.path .private/artwork.png
 ```
 
-Tmpfiles uploads are temporary public files and expire automatically. DisMusicPresence cannot delete Tmpfiles uploads after upload.
+Tmpfiles uploads are temporary public files and expire automatically. DisMediaPresence cannot delete Tmpfiles uploads after upload.
 
 Filebin remains available if explicitly selected, but live Discord validation showed Filebin-hosted images may render as a question-mark placeholder:
 
@@ -134,7 +136,7 @@ This requires Discord to be running and `discord.client_id` to be configured.
 
 ## Apple Music Notes
 
-Apple Music support is validated on macOS. If macOS asks for automation permission, allow the terminal or app host running DisMusicPresence to control Music.
+Apple Music support is validated on macOS. If macOS asks for automation permission, allow the terminal or app host running DisMediaPresence to control Music.
 
 Apple Music on Windows is best-effort, untested, and unsupported until validated on a Windows machine with Apple Music installed. It depends on Windows 10 version 1809 or newer and on Apple Music publishing metadata to Windows media sessions.
 

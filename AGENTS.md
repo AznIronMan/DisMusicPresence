@@ -1,15 +1,15 @@
 # AGENTS.md
 
-This file defines repository rules for human operators and AI coding agents working on DisMusicPresence.
+This file defines repository rules for human operators and AI coding agents working on DisMediaPresence.
 
 ## Project Identity
 
-- Project name: DisMusicPresence
+- Project name: DisMediaPresence
 - Maintainer: Street Kings Productions
 - Company: Clark & Burke LLC
 - Website: https://www.cnb.llc
 - Developer email: streetkings@cnb.llc
-- Current version: `1.0.0`
+- Current version: `1.0.1`
 
 ## Required Workflow
 

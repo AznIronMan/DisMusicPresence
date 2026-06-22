@@ -1,9 +1,9 @@
-# DisMusicPresence
+# DisMediaPresence
 
-Version: `1.0.0`
-Last updated: `2026-06-17`
+Version: `1.0.1`
+Last updated: `2026-06-22`
 
-DisMusicPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
+DisMediaPresence is a local presence bridge for Discord. It reads active playback from Apple Music, Plex, and future media sources, then publishes configurable Discord presence text such as:
 
 - `Listening to Artist - Song`
 - `Watching Movie Name`
@@ -13,9 +13,11 @@ The project is developed by Street Kings Productions, a Clark & Burke LLC compan
 
 ## Current Status
 
-`1.0.0` is the first stable public release. It includes:
+`1.0.1` is the current stable release. It includes:
 
 - Python CLI package with `dmp` command.
+- Rebranded package metadata and documentation for DisMediaPresence.
+- Forward-compatible `dis_media_presence` imports while preserving legacy `dis_music_presence` imports.
 - Local settings file named `dmp.settings`.
 - Interactive setup menu for common Discord, source priority, Apple Music, Plex, and artwork settings.
 - Source priority controls for deciding whether Apple Music or Plex wins when both are active.
@@ -69,6 +71,8 @@ This project started at `0.0.1`.
 
 `1.0.0` is the first stable public release for the Apple Music and Plex bridge. Future media sources should use minor-version releases unless they require incompatible changes.
 
+DisMediaPresence was formerly named DisMusicPresence. Existing `dmp` commands, `dmp.settings` files, source keys such as `apple_music`, and legacy Python imports continue to work.
+
 ## Documentation
 
 User-facing documentation lives in `docs/`:
@@ -83,6 +87,12 @@ User-facing documentation lives in `docs/`:
 - [Release Notes](docs/release.md)
 
 ## Changelog
+
+### 1.0.1 - 2026-06-22
+
+- Rebranded the project, app metadata, documentation, and GitHub links from DisMusicPresence to DisMediaPresence.
+- Changed package distribution metadata to `dis-media-presence` and added the `dis_media_presence` import package.
+- Kept the `dmp` command, `dmp.settings`, existing source keys, legacy `dis_music_presence` imports, and legacy startup templates available for compatibility.
 
 ### 1.0.0 - 2026-06-17
 

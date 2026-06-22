@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import __version__
+from . import APP_NAME, __version__
 from .models import MediaActivity
 from .settings import Settings
 
@@ -23,7 +23,7 @@ FILEBIN_TIMEOUT_SECONDS = 10
 TMPFILES_TIMEOUT_SECONDS = 10
 APPLE_CATALOG_TIMEOUT_SECONDS = 5
 PLEX_ARTWORK_TIMEOUT_SECONDS = 10
-USER_AGENT = f"DisMusicPresence/{__version__}"
+USER_AGENT = f"{APP_NAME}/{__version__}"
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 IMAGE_TYPE_SUFFIXES = {
     "image/jpeg": ".jpg",
@@ -166,7 +166,7 @@ class ArtworkManager:
                 path.unlink(missing_ok=True)
 
         if len(file_bytes) > MAX_ARTWORK_UPLOAD_BYTES:
-            raise ArtworkError("Artwork file is too large for DisMusicPresence temporary uploads.")
+            raise ArtworkError(f"Artwork file is too large for {APP_NAME} temporary uploads.")
 
         content_type = _content_type(path, file_bytes)
         if content_type not in SUPPORTED_IMAGE_TYPES:
@@ -590,7 +590,7 @@ def _tmpfiles_direct_url(url: str) -> str:
 
 
 def _temporary_artwork_path() -> Path:
-    root = Path(tempfile.gettempdir()) / "dis-music-presence"
+    root = Path(tempfile.gettempdir()) / "dis-media-presence"
     root.mkdir(parents=True, exist_ok=True)
     return root / f"apple-music-artwork-{uuid.uuid4().hex}.img"
 

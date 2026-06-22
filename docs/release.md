@@ -2,7 +2,7 @@
 
 ## Version Policy
 
-DisMusicPresence uses `major.minor.patch` versioning.
+DisMediaPresence uses `major.minor.patch` versioning.
 
 - Patch: documentation updates, bug fixes, small internal maintenance, and compatible corrections.
 - Minor: new media sources, new formatting features, new configuration options, and other meaningful feature additions.
@@ -22,13 +22,13 @@ DisMusicPresence uses `major.minor.patch` versioning.
 
 ## Artifact Policy
 
-The `1.0.0` release ships as source plus standard Python package artifacts:
+Current releases ship as source plus standard Python package artifacts:
 
 - Source checkout or GitHub source archive from the release tag.
 - Python wheel.
 - Python source distribution.
 
-Standalone macOS, Windows, or Linux app bundles are not part of `1.0.0`. Generated artifacts belong in `dist/` and are ignored by git.
+Standalone macOS, Windows, or Linux app bundles are not part of current releases. Generated artifacts belong in `dist/` and are ignored by git.
 
 Build artifacts:
 
@@ -41,9 +41,15 @@ Verify the wheel in a clean virtual environment:
 
 ```sh
 python3 -m venv /tmp/dmp-release-check
-/tmp/dmp-release-check/bin/python -m pip install dist/dis_music_presence-1.0.0-py3-none-any.whl
+/tmp/dmp-release-check/bin/python -m pip install dist/dis_media_presence-1.0.1-py3-none-any.whl
 /tmp/dmp-release-check/bin/dmp version
 ```
+
+## 1.0.1 - 2026-06-22
+
+- Rebranded the project, app metadata, documentation, and GitHub links from DisMusicPresence to DisMediaPresence.
+- Changed the package distribution name to `dis-media-presence`.
+- Added forward-compatible `dis_media_presence` imports while preserving `dis_music_presence`, `dmp`, `dmp.settings`, source keys, and legacy startup templates.
 
 ## 1.0.0 - 2026-06-17
 

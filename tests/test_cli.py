@@ -9,10 +9,12 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+import dis_media_presence
 from dis_music_presence.cli import main
 from dis_music_presence.models import ActivityKind, MediaActivity, MediaType
 from dis_music_presence.settings import load_settings
 from dis_music_presence.sources.base import SourceCapability
+from dis_media_presence.cli import main as rebranded_main
 
 
 class CliTests(unittest.TestCase):
@@ -23,7 +25,11 @@ class CliTests(unittest.TestCase):
             code = main(["version"])
 
         self.assertEqual(code, 0)
-        self.assertIn("1.0.0", output.getvalue())
+        self.assertIn("1.0.1", output.getvalue())
+
+    def test_rebranded_import_alias_uses_existing_cli(self) -> None:
+        self.assertEqual(dis_media_presence.APP_NAME, "DisMediaPresence")
+        self.assertIs(rebranded_main, main)
 
     def test_config_init_and_show(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

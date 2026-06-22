@@ -1,6 +1,6 @@
 # Project Overview
 
-DisMusicPresence is a local bridge between media playback sources and Discord presence.
+DisMediaPresence is a local bridge between media playback sources and Discord presence.
 
 The application polls enabled media sources, normalizes the current activity into a common model, formats that activity with user-configurable templates, and updates Discord through the local IPC interface.
 

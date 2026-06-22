@@ -1,6 +1,6 @@
 # Player Sources
 
-DisMusicPresence is built around source providers. A provider reads one media system or player and returns normalized playback data for the shared formatter, artwork resolver, and Discord bridge.
+DisMediaPresence is built around source providers. A provider reads one media system or player and returns normalized playback data for the shared formatter, artwork resolver, and Discord bridge.
 
 ## Current Sources
 
@@ -21,7 +21,7 @@ Plexamp is a strong fit because Plex is already in scope. Prefer a Plex-supporte
 
 VLC is a practical optional source because it has a local HTTP interface, but it requires user-side VLC configuration.
 
-A local webhook source would make the bridge extensible without first-party support for every player. A separate app or script could post normalized playback activity to a local DisMusicPresence endpoint.
+A local webhook source would make the bridge extensible without first-party support for every player. A separate app or script could post normalized playback activity to a local DisMediaPresence endpoint.
 
 Spotify is deferred for now. It remains a future candidate, but it likely needs OAuth and Spotify Web API setup, so it should be handled as a larger dedicated feature.
 

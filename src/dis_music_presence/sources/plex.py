@@ -9,14 +9,14 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any
 
-from .. import __version__
+from .. import APP_NAME, __version__
 from ..models import ActivityKind, MediaActivity, MediaType
 from ..settings import Settings
 from .base import SourceCapability, SourceProvider
 
 
 TIMEOUT_SECONDS = 6
-USER_AGENT = f"DisMusicPresence/{__version__}"
+USER_AGENT = f"{APP_NAME}/{__version__}"
 ACTIVE_PLEX_STATES = {"playing", "buffering"}
 
 

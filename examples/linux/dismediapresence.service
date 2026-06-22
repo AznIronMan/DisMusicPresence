@@ -1,0 +1,14 @@
+[Unit]
+Description=DisMediaPresence Discord presence bridge
+After=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=/ABSOLUTE/PATH/TO/DisMediaPresence
+ExecStart=/ABSOLUTE/PATH/TO/DisMediaPresence/.venv/bin/dmp --settings /ABSOLUTE/PATH/TO/DisMediaPresence/dmp.settings run
+Restart=on-failure
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

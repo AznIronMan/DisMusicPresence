@@ -1,3 +1,5 @@
-"""DisMusicPresence package."""
+"""DisMediaPresence package."""
 
-__version__ = "1.0.0"
+APP_NAME = "DisMediaPresence"
+LEGACY_APP_NAME = "DisMusicPresence"
+__version__ = "1.0.1"

@@ -6,7 +6,7 @@ import logging
 import re
 import sys
 
-from . import __version__
+from . import APP_NAME, __version__
 from .discord_ipc import DiscordConfigError, DiscordError, DiscordIpcClient, check_discord
 from .formatter import PresenceFormatter
 from .models import ActivityKind, MediaActivity, MediaType
@@ -46,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="dmp", description="DisMusicPresence CLI")
+    parser = argparse.ArgumentParser(prog="dmp", description=f"{APP_NAME} CLI")
     parser.add_argument("--settings", default="dmp.settings", help="Path to local settings file.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging.")
     subparsers = parser.add_subparsers(dest="command")
@@ -95,7 +95,7 @@ def _build_parser() -> argparse.ArgumentParser:
     run.set_defaults(handler=_cmd_run)
 
     test_presence = subparsers.add_parser("test-presence", help="Publish a short test presence to Discord.")
-    test_presence.add_argument("--text", default="DisMusicPresence test", help="Text to publish.")
+    test_presence.add_argument("--text", default=f"{APP_NAME} test", help="Text to publish.")
     test_presence.set_defaults(handler=_cmd_test_presence)
 
     return parser
@@ -208,7 +208,7 @@ def _cmd_test_presence(args: argparse.Namespace) -> int:
     settings = load_settings(args.settings)
     activity = MediaActivity(
         kind=ActivityKind.LISTENING,
-        source="DisMusicPresence",
+        source=APP_NAME,
         media_type=MediaType.MUSIC,
         title=args.text,
         artist="Test",

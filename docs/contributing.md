@@ -1,6 +1,6 @@
 # Contributing
 
-DisMusicPresence is open for public use, forks, and contributions.
+DisMediaPresence is open for public use, forks, and contributions.
 
 ## Expectations
 
@@ -25,7 +25,7 @@ python -m unittest discover -s tests
 When reporting a problem, include:
 
 - Operating system and Python version.
-- DisMusicPresence version.
+- DisMediaPresence version.
 - Media source being used.
 - Whether Discord is running.
 - Redacted diagnostic output from `dmp diagnostics`.

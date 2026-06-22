@@ -1,6 +1,6 @@
 # Startup
 
-DisMusicPresence runs as a foreground CLI process by default:
+DisMediaPresence runs as a foreground CLI process by default:
 
 ```sh
 dmp run
@@ -31,31 +31,33 @@ Do not put tokens or API keys in startup templates. Keep those in the local `dmp
 The repo includes a LaunchAgent template:
 
 ```text
-examples/macos/com.streetkings.dismusicpresence.plist
+examples/macos/com.streetkings.dismediapresence.plist
 ```
 
-Copy it into your user LaunchAgents folder and edit every `/ABSOLUTE/PATH/TO/DisMusicPresence` placeholder before loading it:
+Copy it into your user LaunchAgents folder and edit every `/ABSOLUTE/PATH/TO/DisMediaPresence` placeholder before loading it:
 
 ```sh
 mkdir -p ~/Library/LaunchAgents
-cp examples/macos/com.streetkings.dismusicpresence.plist ~/Library/LaunchAgents/
-open -e ~/Library/LaunchAgents/com.streetkings.dismusicpresence.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.streetkings.dismusicpresence.plist
-launchctl enable gui/$(id -u)/com.streetkings.dismusicpresence
-launchctl kickstart -k gui/$(id -u)/com.streetkings.dismusicpresence
+cp examples/macos/com.streetkings.dismediapresence.plist ~/Library/LaunchAgents/
+open -e ~/Library/LaunchAgents/com.streetkings.dismediapresence.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.streetkings.dismediapresence.plist
+launchctl enable gui/$(id -u)/com.streetkings.dismediapresence
+launchctl kickstart -k gui/$(id -u)/com.streetkings.dismediapresence
 ```
 
 Check status:
 
 ```sh
-launchctl print gui/$(id -u)/com.streetkings.dismusicpresence
+launchctl print gui/$(id -u)/com.streetkings.dismediapresence
 ```
 
 Stop and unload:
 
 ```sh
-launchctl bootout gui/$(id -u)/com.streetkings.dismusicpresence
+launchctl bootout gui/$(id -u)/com.streetkings.dismediapresence
 ```
+
+Existing LaunchAgents that use the former `com.streetkings.dismusicpresence` label can keep running. To migrate, boot out the old label, copy the new template, then bootstrap and enable `com.streetkings.dismediapresence`.
 
 macOS may ask for automation permission when Apple Music metadata is read. If the LaunchAgent cannot read Apple Music, run `dmp status` manually from Terminal first and allow the automation prompt.
 
@@ -64,29 +66,31 @@ macOS may ask for automation permission when Apple Music metadata is read. If th
 Linux support is not validated yet, but Plex and Discord IPC are designed to be platform-neutral. The repo includes a user service template:
 
 ```text
-examples/linux/dismusicpresence.service
+examples/linux/dismediapresence.service
 ```
 
-Copy it into your user service folder and edit every `/ABSOLUTE/PATH/TO/DisMusicPresence` placeholder before enabling it:
+Copy it into your user service folder and edit every `/ABSOLUTE/PATH/TO/DisMediaPresence` placeholder before enabling it:
 
 ```sh
 mkdir -p ~/.config/systemd/user
-cp examples/linux/dismusicpresence.service ~/.config/systemd/user/
+cp examples/linux/dismediapresence.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now dismusicpresence.service
+systemctl --user enable --now dismediapresence.service
 ```
 
 Check logs:
 
 ```sh
-journalctl --user -u dismusicpresence.service -f
+journalctl --user -u dismediapresence.service -f
 ```
 
 Stop and disable:
 
 ```sh
-systemctl --user disable --now dismusicpresence.service
+systemctl --user disable --now dismediapresence.service
 ```
+
+Existing user services named `dismusicpresence.service` can keep running. To migrate, disable the old service, copy the new template, then enable `dismediapresence.service`.
 
 ## Windows Task Scheduler
 
@@ -95,9 +99,9 @@ Windows Apple Music support is best-effort and untested. Plex plus Discord shoul
 Use Task Scheduler to run the installed `dmp` command at login. Set:
 
 ```text
-Program: C:\ABSOLUTE\PATH\TO\DisMusicPresence\.venv\Scripts\dmp.exe
-Arguments: --settings C:\ABSOLUTE\PATH\TO\DisMusicPresence\dmp.settings run
-Start in: C:\ABSOLUTE\PATH\TO\DisMusicPresence
+Program: C:\ABSOLUTE\PATH\TO\DisMediaPresence\.venv\Scripts\dmp.exe
+Arguments: --settings C:\ABSOLUTE\PATH\TO\DisMediaPresence\dmp.settings run
+Start in: C:\ABSOLUTE\PATH\TO\DisMediaPresence
 ```
 
 Use `dmp status` in PowerShell before creating the scheduled task so configuration problems are visible first.

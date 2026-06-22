@@ -1,6 +1,6 @@
 # Configuration
 
-DisMusicPresence uses a local settings file named `dmp.settings`.
+DisMediaPresence uses a local settings file named `dmp.settings`.
 
 Create it with:
 
@@ -153,14 +153,14 @@ dmp config set artwork.custom_url https://example.com/artwork.png
 dmp config set artwork.custom_text "Custom Artwork"
 ```
 
-Use `tmpfiles` when you want DisMusicPresence to upload a local custom image to Tmpfiles and use that temporary public URL in Discord:
+Use `tmpfiles` when you want DisMediaPresence to upload a local custom image to Tmpfiles and use that temporary public URL in Discord:
 
 ```sh
 dmp config set artwork.provider tmpfiles
 dmp config set artwork.upload.path .private/artwork.png
 ```
 
-Tmpfiles uploads are temporary public files and cannot be deleted by DisMusicPresence after upload.
+Tmpfiles uploads are temporary public files and cannot be deleted by DisMediaPresence after upload.
 
 Use `filebin` only when you explicitly want Filebin hosting:
 
@@ -169,9 +169,9 @@ dmp config set artwork.provider filebin
 dmp config set artwork.upload.path .private/artwork.png
 ```
 
-Filebin uploads use `https://filebin.net`, a generated bin name, and cleanup on shutdown. If `artwork.filebin.bin` is empty, DisMusicPresence deletes the generated bin during cleanup. If you set a custom bin, DisMusicPresence deletes only the uploaded file so it does not remove unrelated files in the bin. Live Discord testing showed Filebin images may render as a question-mark placeholder in Discord, so `tmpfiles` is the recommended default.
+Filebin uploads use `https://filebin.net`, a generated bin name, and cleanup on shutdown. If `artwork.filebin.bin` is empty, DisMediaPresence deletes the generated bin during cleanup. If you set a custom bin, DisMediaPresence deletes only the uploaded file so it does not remove unrelated files in the bin. Live Discord testing showed Filebin images may render as a question-mark placeholder in Discord, so `tmpfiles` is the recommended default.
 
-Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMusicPresence rejects temporary uploads larger than 10 MB.
+Supported local image types are JPEG, PNG, WebP, and GIF. Keep custom artwork small; DisMediaPresence rejects temporary uploads larger than 10 MB.
 
 Temporary artwork is public while active. Do not upload private, sensitive, or copyrighted images unless you are comfortable with that exposure.
 
